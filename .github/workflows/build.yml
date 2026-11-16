@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout Code
@@ -22,19 +22,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Ensure Linux Line Endings & Permissions
+    - name: Install Gradle
       run: |
-        sed -i 's/\r$//' gradlew
-        chmod +x gradlew
+        sudo apt-get update
+        sudo apt-get install -y gradle
 
-    - name: Build APK with Gradle
-      run: ./gradlew assembleDebug --stacktrace --no-daemon
+    - name: Build APK using System Gradle
+      run: |
+        gradle --version
+        gradle assembleDebug --stacktrace --info
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: PhoneAssistant-debug-apk
         path: app/build/outputs/apk/debug/*.apk
