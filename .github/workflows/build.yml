@@ -1,8 +1,8 @@
-name: Build and Release Phone Assistant APK
+name: Build Phone Assistant APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 permissions:
@@ -10,39 +10,44 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Set up JDK 17
+    - name: Set up Java JDK 17
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
+        distribution: 'zulu'
         java-version: '17'
 
-    - name: Setup Android SDK
+    - name: Set up Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Build with Docker Android Builder
-      run: |
-        docker run --rm -v $(pwd):/project -w /project mingc/android-build-box:latest bash -c "gradle assembleDebug"
+    - name: Validate Gradle Wrapper
+      uses: gradle/actions/wrapper-validation@v3
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    - name: Fix Wrapper Permissions
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
-      if: always()
       with:
         name: PhoneAssistant-debug-apk
         path: app/build/outputs/apk/debug/*.apk
-        retention-days: 14
 
-    - name: Create GitHub Release with APK
+    - name: Create Release
       uses: softprops/action-gh-release@v2
-      if: success()
       with:
-        tag_name: v1.0.0-${{ github.run_number }}
-        name: Phone Assistant APK v1.0.${{ github.run_number }}
+        tag_name: v1.0.0
+        name: Phone Assistant APK v1.0.0
         body: |
           ### 📱 Phone Assistant APK Ready to Install!
           - Auto cleans unnecessary background processes
@@ -50,7 +55,7 @@ jobs:
           - Screen Time quick access
           - Everyday background routine automated
           
-          **Download the .apk below directly to your phone and install.**
+          **Download app-debug.apk below directly to your phone and install.**
         files: app/build/outputs/apk/debug/*.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
