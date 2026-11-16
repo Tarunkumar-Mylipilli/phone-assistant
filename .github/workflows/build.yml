@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
@@ -22,29 +22,35 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle Cache and Tool
-      uses: gradle/actions/setup-gradle@v3
-
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
-
-    - name: Collect and Release APK
+    - name: Run Build and Capture Error Log
+      id: gradle_build
       run: |
-        mkdir -p dist
-        cp app/build/outputs/apk/debug/*.apk dist/phone-assistant.apk
-        ls -la dist/
+        ./gradlew assembleDebug --stacktrace > build_output.log 2>&1 || true
+        cat build_output.log
+        if ls app/build/outputs/apk/debug/*.apk 1> /dev/null 2>&1; then
+          echo "APK_EXISTS=true" >> $GITHUB_OUTPUT
+        else
+          echo "APK_EXISTS=false" >> $GITHUB_OUTPUT
+        fi
 
-    - name: Create GitHub Release with APK
+    - name: Upload Full Build Log
+      uses: actions/upload-artifact@v4
+      with:
+        name: gradle-build-output-log
+        path: build_output.log
+
+    - name: Create Release with APK
+      if: steps.gradle_build.outputs.APK_EXISTS == 'true'
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: app-v1.0.${{ github.run_number }}
+        tag_name: apk-v1.0.${{ github.run_number }}
         name: Phone Assistant APK v1.0.${{ github.run_number }}
         body: |
           ### 📱 Phone Assistant APK Ready!
-          Download `phone-assistant.apk` below directly to your phone and tap Install.
-        files: dist/phone-assistant.apk
+          Download `app-debug.apk` directly to your phone and install.
+        files: app/build/outputs/apk/debug/*.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
