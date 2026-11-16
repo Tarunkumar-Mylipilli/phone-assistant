@@ -22,15 +22,12 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Install Gradle
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gradle
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
-    - name: Build APK using System Gradle
+    - name: Build with Docker Android Builder
       run: |
-        gradle --version
-        gradle assembleDebug --stacktrace --info
+        docker run --rm -v $(pwd):/project -w /project mingc/android-build-box:latest bash -c "gradle assembleDebug"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -42,6 +39,7 @@ jobs:
 
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
+      if: success()
       with:
         tag_name: v1.0.0-${{ github.run_number }}
         name: Phone Assistant APK v1.0.${{ github.run_number }}
