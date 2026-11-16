@@ -27,24 +27,25 @@ jobs:
 
     - name: Build Debug APK
       run: |
-        ./gradlew assembleDebug --stacktrace || true
+        ./gradlew assembleDebug
 
-    - name: Show Detailed Output Location
+    - name: Verify and Move APK
       run: |
-        find app/build -type f -name "*.apk" || true
-        find . -name "*.apk" || true
+        mkdir -p release_apk
+        find . -name "*.apk" -exec cp {} release_apk/phone-assistant.apk \;
+        ls -la release_apk/
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PhoneAssistant-debug-apk
-        path: "**/build/outputs/apk/**/*.apk"
+        name: PhoneAssistant-apk
+        path: release_apk/phone-assistant.apk
         retention-days: 14
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v1.0.${{ github.run_number }}
+        tag_name: release-v1.0.${{ github.run_number }}
         name: Phone Assistant APK v1.0.${{ github.run_number }}
         body: |
           ### 📱 Phone Assistant APK Ready to Install!
@@ -53,7 +54,7 @@ jobs:
           - Screen Time quick access
           - Everyday background routine automated
           
-          **Download app-debug.apk below directly to your phone and install.**
-        files: "**/build/outputs/apk/**/*.apk"
+          **Download phone-assistant.apk below directly to your phone and install.**
+        files: release_apk/phone-assistant.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
