@@ -17,13 +17,13 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Top Header with Glowing Orb -->
+            <!-- Top Header with Glowing Orb & Voice Speaker -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="18dp"
                 android:padding="4dp">
 
                 <ImageView
@@ -34,28 +34,41 @@
                     android:contentDescription="Evolve AI Core Orb" />
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:orientation="vertical"
                     android:layout_marginStart="14dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="EVOLVE AI"
+                        android:text="EVOLVE AI • JARVIS OS"
                         android:textColor="#00E5FF"
                         android:letterSpacing="0.15"
-                        android:textSize="12sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Personal Life OS"
+                        android:text="Life Operating System"
                         android:textColor="#FFFFFF"
-                        android:textSize="20sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+
+                <!-- Voice Mute/Read Out Loud Toggle -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVoiceSpeak"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="Speak 🔊"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    app:strokeColor="#00E5FF"
+                    app:cornerRadius="19dp" />
             </LinearLayout>
 
             <!-- SECTION 1: HOME DASHBOARD CONTAINER -->
@@ -71,7 +84,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
                     app:strokeColor="#1F2A44"
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="#121829">
@@ -80,7 +92,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -97,9 +109,18 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:lineSpacingExtra="3dp"
-                            android:text="Good day. Your OS is primed for high-leverage execution. 4 milestones are scheduled today across Career, Health, and Daily routines."
+                            android:text="Good day. Your OS is primed for high-leverage execution. 4 milestones scheduled across career and health."
                             android:textColor="#E0E6ED"
                             android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvFinanceOverview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="💰 Savings Target: Loading..."
+                            android:textColor="#00E5FF"
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -109,7 +130,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
                     app:strokeColor="#1F2A44"
                     app:strokeWidth="1dp"
                     app:cardBackgroundColor="#121829">
@@ -118,12 +138,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:padding="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="SYSTEM DIAGNOSTICS &amp; RAM"
+                            android:text="REALME GT 2 (SD 888) • MEMORY"
                             android:textColor="#7C4DFF"
                             android:textSize="11sp"
                             android:letterSpacing="0.1"
@@ -151,7 +171,7 @@
                             android:id="@+id/btnCleanRam"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
+                            android:layout_marginTop="12dp"
                             android:backgroundTint="#7C4DFF"
                             android:text="Clean Background Cache &amp; Apps"
                             android:textColor="#FFFFFF"
@@ -197,9 +217,9 @@
                             android:id="@+id/tvAiResponse"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:minLines="6"
+                            android:minLines="5"
                             android:lineSpacingExtra="4dp"
-                            android:text="Hello, I am Evolve AI.\n\nAsk me anything regarding your day, career roadmap, workout routine, or type 'remember &lt;note&gt;' to save to permanent AI memory."
+                            android:text="Jarvis is ready.\n\nAsk anything regarding your schedule, DSA &amp; system design roadmaps, workout plans, or type 'remember &lt;note&gt;'."
                             android:textColor="#E0E6ED"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -219,7 +239,7 @@
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:background="#121829"
-                        android:hint="Ask Evolve AI or add a task..."
+                        android:hint="Ask Jarvis or schedule tasks..."
                         android:textColorHint="#4A5568"
                         android:textColor="#FFFFFF"
                         android:paddingStart="14dp"
@@ -267,9 +287,9 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- SECTION 3: MY DAY PLANNER CONTAINER -->
+            <!-- SECTION 3: CAREER & LEARNING ROADMAP CONTAINER -->
             <LinearLayout
-                android:id="@+id/sectionPlanner"
+                android:id="@+id/sectionCareer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -278,7 +298,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SCHEDULED MILESTONES &amp; TASKS"
+                    android:text="CAREER GROWTH &amp; TECH ROADMAP"
                     android:textColor="#00E5FF"
                     android:textSize="11sp"
                     android:letterSpacing="0.1"
@@ -286,28 +306,68 @@
                     android:layout_marginBottom="10dp" />
 
                 <TextView
-                    android:id="@+id/tvPlannerList"
+                    android:id="@+id/tvSkillsList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:lineSpacingExtra="6dp"
-                    android:text="Loading tasks..."
+                    android:text="Loading skills..."
                     android:textColor="#E0E6ED"
                     android:textSize="14sp"
                     android:background="#121829"
                     android:padding="16dp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAddNewTask"
+                    android:id="@+id/btnMockInterview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="#7C4DFF"
+                    android:text="Start AI Mock Technical Interview"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+            <!-- SECTION 4: HABITS, HEALTH & FINANCE CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionHabits"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DAILY HABITS &amp; STREAK TRACKER"
+                    android:textColor="#7C4DFF"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/tvHabitsList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingExtra="6dp"
+                    android:text="Loading habits..."
+                    android:textColor="#E0E6ED"
+                    android:textSize="14sp"
+                    android:background="#121829"
+                    android:padding="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckInHabit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:backgroundTint="#00E5FF"
-                    android:text="+ Add Milestone Task"
+                    android:text="Check In Today's Coding &amp; Workout"
                     android:textColor="#0A0E1A"
                     app:cornerRadius="10dp" />
             </LinearLayout>
 
-            <!-- SECTION 4: AI BRAIN & GGUF MODEL MANAGER -->
+            <!-- SECTION 5: AI BRAIN & GGUF MODEL MANAGER -->
             <LinearLayout
                 android:id="@+id/sectionModels"
                 android:layout_width="match_parent"
@@ -360,46 +420,6 @@
                             app:cornerRadius="10dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
-
-            <!-- SECTION 5: AI MEMORY CONTAINER -->
-            <LinearLayout
-                android:id="@+id/sectionMemory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="PERSISTENT USER-CONTROLLED MEMORY"
-                    android:textColor="#7C4DFF"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="10dp" />
-
-                <TextView
-                    android:id="@+id/tvMemoryList"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingExtra="6dp"
-                    android:text="Loading memories..."
-                    android:textColor="#E0E6ED"
-                    android:textSize="14sp"
-                    android:background="#121829"
-                    android:padding="16dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnClearMemory"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="#E53935"
-                    android:text="Clear AI Memory Store"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="10dp" />
             </LinearLayout>
 
         </LinearLayout>

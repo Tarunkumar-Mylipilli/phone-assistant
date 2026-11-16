@@ -28,21 +28,24 @@ public class MainActivity extends AppCompatActivity {
 
     private DatabaseHelper dbHelper;
     private LocalModelManager modelManager;
+    private VoiceManager voiceManager;
 
     // Navigation sections
     private LinearLayout sectionHome;
     private LinearLayout sectionAssistant;
-    private LinearLayout sectionPlanner;
+    private LinearLayout sectionCareer;
+    private LinearLayout sectionHabits;
     private LinearLayout sectionModels;
-    private LinearLayout sectionMemory;
     private BottomNavigationView bottomNavigationView;
 
     // Home views
     private TextView tvMemoryInfo;
     private TextView tvBatteryInfo;
     private TextView tvDailyBrief;
+    private TextView tvFinanceOverview;
     private Button btnCleanRam;
     private Button btnScreenTimeSettings;
+    private Button btnVoiceSpeak;
 
     // AI Assistant views
     private TextView tvAiResponse;
@@ -51,17 +54,17 @@ public class MainActivity extends AppCompatActivity {
     private Button chipBriefing;
     private Button chipCareer;
 
-    // My Day Planner views
-    private TextView tvPlannerList;
-    private Button btnAddNewTask;
+    // Career views
+    private TextView tvSkillsList;
+    private Button btnMockInterview;
+
+    // Habits views
+    private TextView tvHabitsList;
+    private Button btnCheckInHabit;
 
     // AI Models views
     private TextView tvModelCatalog;
     private Button btnSwitchEngine;
-
-    // AI Memory views
-    private TextView tvMemoryList;
-    private Button btnClearMemory;
 
     private int engineIndex = 0;
     private final String[] engines = {"SmolLM2-1.7B-Q4", "Qwen2.5-1.5B-Q4", "Llama-3.2-1B-Q4", "Local-Rule-Based"};
@@ -73,11 +76,12 @@ public class MainActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
         modelManager = new LocalModelManager(this);
+        voiceManager = new VoiceManager(this);
 
         initViews();
         setupNavigation();
         updateDeviceInfo();
-        refreshPlannerAndMemory();
+        refreshAllData();
         renderModelCatalog();
         scheduleBackgroundRoutine();
     }
@@ -85,20 +89,27 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         sectionHome = findViewById(R.id.sectionHome);
         sectionAssistant = findViewById(R.id.sectionAssistant);
-        sectionPlanner = findViewById(R.id.sectionPlanner);
+        sectionCareer = findViewById(R.id.sectionCareer);
+        sectionHabits = findViewById(R.id.sectionHabits);
         sectionModels = findViewById(R.id.sectionModels);
-        sectionMemory = findViewById(R.id.sectionMemory);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Home
         tvMemoryInfo = findViewById(R.id.tvMemoryInfo);
         tvBatteryInfo = findViewById(R.id.tvBatteryInfo);
         tvDailyBrief = findViewById(R.id.tvDailyBrief);
+        tvFinanceOverview = findViewById(R.id.tvFinanceOverview);
         btnCleanRam = findViewById(R.id.btnCleanRam);
         btnScreenTimeSettings = findViewById(R.id.btnScreenTimeSettings);
+        btnVoiceSpeak = findViewById(R.id.btnVoiceSpeak);
 
         btnCleanRam.setOnClickListener(v -> cleanBackgroundApps());
         btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
+        btnVoiceSpeak.setOnClickListener(v -> {
+            String briefText = tvDailyBrief.getText().toString();
+            voiceManager.speak("Welcome to Evolve A I. " + briefText);
+            Toast.makeText(this, "Speaking daily briefing...", Toast.LENGTH_SHORT).show();
+        });
 
         // Assistant
         tvAiResponse = findViewById(R.id.tvAiResponse);
@@ -113,27 +124,41 @@ public class MainActivity extends AppCompatActivity {
                 String reply = AIAssistantEngine.processQuery(query, dbHelper, modelManager);
                 tvAiResponse.setText(reply);
                 etUserQuery.setText("");
-                refreshPlannerAndMemory();
+                refreshAllData();
+                voiceManager.speak(reply);
             }
         });
 
         chipBriefing.setOnClickListener(v -> {
             String reply = AIAssistantEngine.processQuery("daily briefing", dbHelper, modelManager);
             tvAiResponse.setText(reply);
+            voiceManager.speak(reply);
         });
 
         chipCareer.setOnClickListener(v -> {
             String reply = AIAssistantEngine.processQuery("career plan", dbHelper, modelManager);
             tvAiResponse.setText(reply);
+            voiceManager.speak(reply);
         });
 
-        // Planner
-        tvPlannerList = findViewById(R.id.tvPlannerList);
-        btnAddNewTask = findViewById(R.id.btnAddNewTask);
-        btnAddNewTask.setOnClickListener(v -> {
-            dbHelper.addTask("Personal Growth Milestone", "Career");
-            refreshPlannerAndMemory();
-            Toast.makeText(this, "Milestone added to your plan!", Toast.LENGTH_SHORT).show();
+        // Career
+        tvSkillsList = findViewById(R.id.tvSkillsList);
+        btnMockInterview = findViewById(R.id.btnMockInterview);
+        btnMockInterview.setOnClickListener(v -> {
+            bottomNavigationView.setSelectedItemId(R.id.nav_assistant);
+            String reply = "Evolve Mock Interviewer: Question 1:\n\n'In a distributed microservice system, how would you design an idempotent payment processing API to handle network retries without double-charging the customer?'\n\nType your answer below:";
+            tvAiResponse.setText(reply);
+            voiceManager.speak(reply);
+        });
+
+        // Habits
+        tvHabitsList = findViewById(R.id.tvHabitsList);
+        btnCheckInHabit = findViewById(R.id.btnCheckInHabit);
+        btnCheckInHabit.setOnClickListener(v -> {
+            dbHelper.checkInHabit("Coding");
+            dbHelper.checkInHabit("Routine");
+            refreshAllData();
+            Toast.makeText(this, "Checked in! Streaks incremented.", Toast.LENGTH_SHORT).show();
         });
 
         // Models
@@ -144,15 +169,6 @@ public class MainActivity extends AppCompatActivity {
             modelManager.setActiveModelId(engines[engineIndex]);
             renderModelCatalog();
             Toast.makeText(this, "Switched active AI Engine to: " + engines[engineIndex], Toast.LENGTH_SHORT).show();
-        });
-
-        // Memory
-        tvMemoryList = findViewById(R.id.tvMemoryList);
-        btnClearMemory = findViewById(R.id.btnClearMemory);
-        btnClearMemory.setOnClickListener(v -> {
-            dbHelper.clearAllMemories();
-            refreshPlannerAndMemory();
-            Toast.makeText(this, "Persistent AI Memory cleared.", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -175,9 +191,9 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
             sectionHome.setVisibility(View.GONE);
             sectionAssistant.setVisibility(View.GONE);
-            sectionPlanner.setVisibility(View.GONE);
+            sectionCareer.setVisibility(View.GONE);
+            sectionHabits.setVisibility(View.GONE);
             sectionModels.setVisibility(View.GONE);
-            sectionMemory.setVisibility(View.GONE);
 
             if (id == R.id.nav_home) {
                 sectionHome.setVisibility(View.VISIBLE);
@@ -186,39 +202,45 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_assistant) {
                 sectionAssistant.setVisibility(View.VISIBLE);
                 return true;
-            } else if (id == R.id.nav_planner) {
-                sectionPlanner.setVisibility(View.VISIBLE);
-                refreshPlannerAndMemory();
+            } else if (id == R.id.nav_career) {
+                sectionCareer.setVisibility(View.VISIBLE);
+                refreshAllData();
+                return true;
+            } else if (id == R.id.nav_habits) {
+                sectionHabits.setVisibility(View.VISIBLE);
+                refreshAllData();
                 return true;
             } else if (id == R.id.nav_models) {
                 sectionModels.setVisibility(View.VISIBLE);
                 renderModelCatalog();
-                return true;
-            } else if (id == R.id.nav_memory) {
-                sectionMemory.setVisibility(View.VISIBLE);
-                refreshPlannerAndMemory();
                 return true;
             }
             return false;
         });
     }
 
-    private void refreshPlannerAndMemory() {
+    private void refreshAllData() {
         // Refresh Tasks
         List<String> tasks = dbHelper.getAllTasks();
-        StringBuilder taskSb = new StringBuilder();
-        for (String t : tasks) {
-            taskSb.append(t).append("\n\n");
-        }
-        tvPlannerList.setText(taskSb.length() > 0 ? taskSb.toString() : "No tasks scheduled. Add your first goal!");
 
-        // Refresh Memory
-        List<String> memories = dbHelper.getAllMemories();
-        StringBuilder memSb = new StringBuilder();
-        for (String m : memories) {
-            memSb.append(m).append("\n\n");
+        // Refresh Skills
+        List<String> skills = dbHelper.getAllSkills();
+        StringBuilder skillSb = new StringBuilder();
+        for (String s : skills) {
+            skillSb.append(s).append("\n\n");
         }
-        tvMemoryList.setText(memSb.length() > 0 ? memSb.toString() : "Memory store is empty. Teach Evolve AI using 'remember <note>'");
+        tvSkillsList.setText(skillSb.length() > 0 ? skillSb.toString() : "No technical roadmaps loaded.");
+
+        // Refresh Habits
+        List<String> habits = dbHelper.getAllHabits();
+        StringBuilder habitSb = new StringBuilder();
+        for (String h : habits) {
+            habitSb.append(h).append("\n\n");
+        }
+        tvHabitsList.setText(habitSb.length() > 0 ? habitSb.toString() : "No active streaks recorded.");
+
+        // Finance Overview
+        tvFinanceOverview.setText(dbHelper.getFinanceSummary());
 
         // Update Briefing
         tvDailyBrief.setText("Good day. " + tasks.size() + " active milestones scheduled across your career, health, and daily routines.");
@@ -284,5 +306,13 @@ public class MainActivity extends AppCompatActivity {
             Intent fallback = new Intent(Settings.ACTION_SETTINGS);
             startActivity(fallback);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (voiceManager != null) {
+            voiceManager.shutdown();
+        }
+        super.onDestroy();
     }
 }
