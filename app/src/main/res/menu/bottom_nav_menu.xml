@@ -9,15 +9,15 @@
         android:icon="@android:drawable/ic_menu_send"
         android:title="AI Jarvis" />
     <item
+        android:id="@+id/nav_actions"
+        android:icon="@android:drawable/ic_lock_idle_alarm"
+        android:title="Phone Actions" />
+    <item
         android:id="@+id/nav_career"
         android:icon="@android:drawable/ic_menu_compass"
-        android:title="Career &amp; Learn" />
+        android:title="Career" />
     <item
         android:id="@+id/nav_habits"
         android:icon="@android:drawable/ic_menu_my_calendar"
-        android:title="Habits &amp; Health" />
-    <item
-        android:id="@+id/nav_models"
-        android:icon="@android:drawable/ic_menu_save"
-        android:title="AI Brain" />
+        android:title="Habits" />
 </menu>

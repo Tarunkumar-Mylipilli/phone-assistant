@@ -219,7 +219,7 @@
                             android:layout_height="wrap_content"
                             android:minLines="5"
                             android:lineSpacingExtra="4dp"
-                            android:text="Jarvis is ready.\n\nAsk anything regarding your schedule, DSA &amp; system design roadmaps, workout plans, or type 'remember &lt;note&gt;'."
+                            android:text="Jarvis is ready.\n\nTry native voice/text commands:\n• 'Set alarm tomorrow at 4:30 AM'\n• 'Set a timer for 10 minutes'\n• 'Open YouTube'\n• 'Open Settings'"
                             android:textColor="#E0E6ED"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -239,12 +239,12 @@
                         android:layout_height="48dp"
                         android:layout_weight="1"
                         android:background="#121829"
-                        android:hint="Ask Jarvis or schedule tasks..."
+                        android:hint="Type or command: 'set alarm at 4:30 am'..."
                         android:textColorHint="#4A5568"
                         android:textColor="#FFFFFF"
                         android:paddingStart="14dp"
                         android:paddingEnd="14dp"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendQuery"
@@ -252,7 +252,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:backgroundTint="#00E5FF"
-                        android:text="Send"
+                        android:text="Execute"
                         android:textColor="#0A0E1A"
                         app:cornerRadius="10dp" />
                 </LinearLayout>
@@ -264,30 +264,114 @@
                     android:orientation="horizontal">
 
                     <Button
-                        android:id="@+id/chipBriefing"
+                        android:id="@+id/chipAlarm"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginEnd="4dp"
-                        android:text="Daily Brief"
+                        android:text="Alarm 4:30 AM"
                         android:textColor="#00E5FF"
                         app:strokeColor="#00E5FF" />
 
                     <Button
-                        android:id="@+id/chipCareer"
+                        android:id="@+id/chipTimer"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="Career Plan"
+                        android:text="Timer 10m"
                         android:textColor="#7C4DFF"
                         app:strokeColor="#7C4DFF" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- SECTION 3: CAREER & LEARNING ROADMAP CONTAINER -->
+            <!-- SECTION 3: NATIVE PHONE ACTIONS CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NATIVE ANDROID PHONE CONTROLLER"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#1F2A44"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#121829">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="One-Touch Native System Triggers"
+                            android:textColor="#FFFFFF"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTriggerAlarm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:backgroundTint="#00E5FF"
+                            android:text="⏰ Schedule Clock Alarm (04:30 AM)"
+                            android:textColor="#0A0E1A"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTriggerTimer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:backgroundTint="#7C4DFF"
+                            android:text="⏳ Set Native Timer (10 Minutes)"
+                            android:textColor="#FFFFFF"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLaunchYouTube"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:backgroundTint="#1F2A44"
+                            android:text="▶ Launch YouTube"
+                            android:textColor="#00E5FF"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLaunchMaps"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:backgroundTint="#1F2A44"
+                            android:text="🗺️ Open Maps Navigation"
+                            android:textColor="#00E5FF"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- SECTION 4: CAREER & LEARNING ROADMAP CONTAINER -->
             <LinearLayout
                 android:id="@+id/sectionCareer"
                 android:layout_width="match_parent"
@@ -327,7 +411,7 @@
                     app:cornerRadius="10dp" />
             </LinearLayout>
 
-            <!-- SECTION 4: HABITS, HEALTH & FINANCE CONTAINER -->
+            <!-- SECTION 5: HABITS, HEALTH & FINANCE CONTAINER -->
             <LinearLayout
                 android:id="@+id/sectionHabits"
                 android:layout_width="match_parent"
@@ -365,61 +449,6 @@
                     android:text="Check In Today's Coding &amp; Workout"
                     android:textColor="#0A0E1A"
                     app:cornerRadius="10dp" />
-            </LinearLayout>
-
-            <!-- SECTION 5: AI BRAIN & GGUF MODEL MANAGER -->
-            <LinearLayout
-                android:id="@+id/sectionModels"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="OFFLINE GGUF AI BRAIN &amp; HARDWARE (REALME GT 2)"
-                    android:textColor="#00E5FF"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="10dp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="16dp"
-                    app:strokeColor="#1F2A44"
-                    app:strokeWidth="1dp"
-                    app:cardBackgroundColor="#121829">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:id="@+id/tvModelCatalog"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:lineSpacingExtra="5dp"
-                            android:text="Loading offline AI models..."
-                            android:textColor="#E0E6ED"
-                            android:textSize="13sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSwitchEngine"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:backgroundTint="#00E5FF"
-                            android:text="Cycle Active AI Engine"
-                            android:textColor="#0A0E1A"
-                            app:cornerRadius="10dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
         </LinearLayout>

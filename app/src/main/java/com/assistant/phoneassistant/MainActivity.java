@@ -29,13 +29,14 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
     private LocalModelManager modelManager;
     private VoiceManager voiceManager;
+    private AndroidActionManager actionManager;
 
     // Navigation sections
     private LinearLayout sectionHome;
     private LinearLayout sectionAssistant;
+    private LinearLayout sectionActions;
     private LinearLayout sectionCareer;
     private LinearLayout sectionHabits;
-    private LinearLayout sectionModels;
     private BottomNavigationView bottomNavigationView;
 
     // Home views
@@ -51,8 +52,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvAiResponse;
     private EditText etUserQuery;
     private Button btnSendQuery;
-    private Button chipBriefing;
-    private Button chipCareer;
+    private Button chipAlarm;
+    private Button chipTimer;
+
+    // Native Actions views
+    private Button btnTriggerAlarm;
+    private Button btnTriggerTimer;
+    private Button btnLaunchYouTube;
+    private Button btnLaunchMaps;
 
     // Career views
     private TextView tvSkillsList;
@@ -62,13 +69,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvHabitsList;
     private Button btnCheckInHabit;
 
-    // AI Models views
-    private TextView tvModelCatalog;
-    private Button btnSwitchEngine;
-
-    private int engineIndex = 0;
-    private final String[] engines = {"SmolLM2-1.7B-Q4", "Qwen2.5-1.5B-Q4", "Llama-3.2-1B-Q4", "Local-Rule-Based"};
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,21 +77,21 @@ public class MainActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
         modelManager = new LocalModelManager(this);
         voiceManager = new VoiceManager(this);
+        actionManager = new AndroidActionManager(this);
 
         initViews();
         setupNavigation();
         updateDeviceInfo();
         refreshAllData();
-        renderModelCatalog();
         scheduleBackgroundRoutine();
     }
 
     private void initViews() {
         sectionHome = findViewById(R.id.sectionHome);
         sectionAssistant = findViewById(R.id.sectionAssistant);
+        sectionActions = findViewById(R.id.sectionActions);
         sectionCareer = findViewById(R.id.sectionCareer);
         sectionHabits = findViewById(R.id.sectionHabits);
-        sectionModels = findViewById(R.id.sectionModels);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Home
@@ -115,13 +115,13 @@ public class MainActivity extends AppCompatActivity {
         tvAiResponse = findViewById(R.id.tvAiResponse);
         etUserQuery = findViewById(R.id.etUserQuery);
         btnSendQuery = findViewById(R.id.btnSendQuery);
-        chipBriefing = findViewById(R.id.chipBriefing);
-        chipCareer = findViewById(R.id.chipCareer);
+        chipAlarm = findViewById(R.id.chipAlarm);
+        chipTimer = findViewById(R.id.chipTimer);
 
         btnSendQuery.setOnClickListener(v -> {
             String query = etUserQuery.getText().toString().trim();
             if (!query.isEmpty()) {
-                String reply = AIAssistantEngine.processQuery(query, dbHelper, modelManager);
+                String reply = AIAssistantEngine.processQuery(query, dbHelper, modelManager, actionManager);
                 tvAiResponse.setText(reply);
                 etUserQuery.setText("");
                 refreshAllData();
@@ -129,16 +129,44 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        chipBriefing.setOnClickListener(v -> {
-            String reply = AIAssistantEngine.processQuery("daily briefing", dbHelper, modelManager);
+        chipAlarm.setOnClickListener(v -> {
+            String reply = actionManager.setNativeAlarm(4, 30, "Evolve Morning Protocol", true);
             tvAiResponse.setText(reply);
             voiceManager.speak(reply);
         });
 
-        chipCareer.setOnClickListener(v -> {
-            String reply = AIAssistantEngine.processQuery("career plan", dbHelper, modelManager);
+        chipTimer.setOnClickListener(v -> {
+            String reply = actionManager.setNativeTimer(600, "Evolve 10m Focus Session", true);
             tvAiResponse.setText(reply);
             voiceManager.speak(reply);
+        });
+
+        // Native Actions Direct Triggers
+        btnTriggerAlarm = findViewById(R.id.btnTriggerAlarm);
+        btnTriggerTimer = findViewById(R.id.btnTriggerTimer);
+        btnLaunchYouTube = findViewById(R.id.btnLaunchYouTube);
+        btnLaunchMaps = findViewById(R.id.btnLaunchMaps);
+
+        btnTriggerAlarm.setOnClickListener(v -> {
+            String res = actionManager.setNativeAlarm(4, 30, "Evolve Morning Routine", true);
+            Toast.makeText(this, res, Toast.LENGTH_LONG).show();
+            voiceManager.speak(res);
+        });
+
+        btnTriggerTimer.setOnClickListener(v -> {
+            String res = actionManager.setNativeTimer(600, "10-Minute Deep Work", true);
+            Toast.makeText(this, res, Toast.LENGTH_LONG).show();
+            voiceManager.speak(res);
+        });
+
+        btnLaunchYouTube.setOnClickListener(v -> {
+            String res = actionManager.launchAppByName("YouTube");
+            Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
+        });
+
+        btnLaunchMaps.setOnClickListener(v -> {
+            String res = actionManager.startNavigation("Nearby Gym");
+            Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
         });
 
         // Career
@@ -146,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         btnMockInterview = findViewById(R.id.btnMockInterview);
         btnMockInterview.setOnClickListener(v -> {
             bottomNavigationView.setSelectedItemId(R.id.nav_assistant);
-            String reply = "Evolve Mock Interviewer: Question 1:\n\n'In a distributed microservice system, how would you design an idempotent payment processing API to handle network retries without double-charging the customer?'\n\nType your answer below:";
+            String reply = "Evolve Mock Interviewer: Question 1:\n\n'In a distributed system, how would you design an idempotent payment processing API to handle network retries without double-charging the customer?'\n\nType your answer below:";
             tvAiResponse.setText(reply);
             voiceManager.speak(reply);
         });
@@ -160,30 +188,6 @@ public class MainActivity extends AppCompatActivity {
             refreshAllData();
             Toast.makeText(this, "Checked in! Streaks incremented.", Toast.LENGTH_SHORT).show();
         });
-
-        // Models
-        tvModelCatalog = findViewById(R.id.tvModelCatalog);
-        btnSwitchEngine = findViewById(R.id.btnSwitchEngine);
-        btnSwitchEngine.setOnClickListener(v -> {
-            engineIndex = (engineIndex + 1) % engines.length;
-            modelManager.setActiveModelId(engines[engineIndex]);
-            renderModelCatalog();
-            Toast.makeText(this, "Switched active AI Engine to: " + engines[engineIndex], Toast.LENGTH_SHORT).show();
-        });
-    }
-
-    private void renderModelCatalog() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Active Engine: ").append(modelManager.getActiveModelId().toUpperCase()).append("\n");
-        sb.append("Target Device: Realme GT 2 (Snapdragon 888, 8GB RAM)\n\n");
-
-        for (ModelInfo m : modelManager.getAvailableModels()) {
-            sb.append("• ").append(m.getName()).append("\n");
-            sb.append("  Specs: ").append(m.getParameterSize()).append(" | RAM Req: ~").append(m.getRecommendedRamMb()).append(" MB\n");
-            sb.append("  Note: ").append(m.getDescription()).append("\n\n");
-        }
-        sb.append("Operating Rule: Zero paid APIs. Models run 100% on-device or via fallback intelligence.");
-        tvModelCatalog.setText(sb.toString());
     }
 
     private void setupNavigation() {
@@ -191,9 +195,9 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
             sectionHome.setVisibility(View.GONE);
             sectionAssistant.setVisibility(View.GONE);
+            sectionActions.setVisibility(View.GONE);
             sectionCareer.setVisibility(View.GONE);
             sectionHabits.setVisibility(View.GONE);
-            sectionModels.setVisibility(View.GONE);
 
             if (id == R.id.nav_home) {
                 sectionHome.setVisibility(View.VISIBLE);
@@ -202,6 +206,9 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_assistant) {
                 sectionAssistant.setVisibility(View.VISIBLE);
                 return true;
+            } else if (id == R.id.nav_actions) {
+                sectionActions.setVisibility(View.VISIBLE);
+                return true;
             } else if (id == R.id.nav_career) {
                 sectionCareer.setVisibility(View.VISIBLE);
                 refreshAllData();
@@ -209,10 +216,6 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_habits) {
                 sectionHabits.setVisibility(View.VISIBLE);
                 refreshAllData();
-                return true;
-            } else if (id == R.id.nav_models) {
-                sectionModels.setVisibility(View.VISIBLE);
-                renderModelCatalog();
                 return true;
             }
             return false;
