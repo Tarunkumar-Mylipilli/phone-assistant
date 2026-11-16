@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.AlarmClock;
 import android.provider.CalendarContract;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.widget.Toast;
 
@@ -82,8 +83,14 @@ public class AndroidActionManager {
             else if (query.contains("whatsapp")) targetPkg = "com.whatsapp";
             else if (query.contains("maps") || query.contains("navigation")) targetPkg = "com.google.android.apps.maps";
             else if (query.contains("chrome") || query.contains("browser")) targetPkg = "com.android.chrome";
-            else if (query.contains("camera")) targetPkg = "com.oplus.camera"; // Realme camera or fallback
-            else if (query.contains("spotify")) targetPkg = "com.spotify.music";
+            else if (query.contains("camera")) {
+                Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                camIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (camIntent.resolveActivity(pm) != null) {
+                    context.startActivity(camIntent);
+                    return "Opened Camera.";
+                }
+            } else if (query.contains("spotify")) targetPkg = "com.spotify.music";
             else if (query.contains("settings")) {
                 Intent sIntent = new Intent(Settings.ACTION_SETTINGS);
                 sIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -98,14 +105,6 @@ public class AndroidActionManager {
                     context.startActivity(launchIntent);
                     return "Launched " + appName + " successfully.";
                 }
-            }
-
-            // Fallback generic search intent
-            Intent generic = pm.getLaunchIntentForPackage("com.google.android." + query);
-            if (generic != null) {
-                generic.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(generic);
-                return "Launched " + appName + ".";
             }
 
             return "App '" + appName + "' not found directly. Please ensure it is installed on your Realme GT 2.";

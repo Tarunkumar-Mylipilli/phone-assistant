@@ -4,16 +4,20 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.os.BatteryManager;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
@@ -26,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int REQUEST_IMAGE_CAPTURE = 101;
+
     private DatabaseHelper dbHelper;
     private LocalModelManager modelManager;
     private VoiceManager voiceManager;
@@ -34,9 +40,9 @@ public class MainActivity extends AppCompatActivity {
     // Navigation sections
     private LinearLayout sectionHome;
     private LinearLayout sectionAssistant;
+    private LinearLayout sectionVision;
     private LinearLayout sectionActions;
     private LinearLayout sectionCareer;
-    private LinearLayout sectionHabits;
     private BottomNavigationView bottomNavigationView;
 
     // Home views
@@ -55,6 +61,17 @@ public class MainActivity extends AppCompatActivity {
     private Button chipAlarm;
     private Button chipTimer;
 
+    // Vision Coach views
+    private ImageView ivCameraFrame;
+    private TextView tvLiveGuidance;
+    private TextView tvPhotoScore;
+    private TextView tvPhotoFeedback;
+    private Button btnCapturePhoto;
+    private Button btnCycleCoachMode;
+
+    private int coachModeIndex = 0;
+    private final String[] coachModes = {"Portrait", "Food", "Landscape", "Document", "Outfit"};
+
     // Native Actions views
     private Button btnTriggerAlarm;
     private Button btnTriggerTimer;
@@ -64,10 +81,6 @@ public class MainActivity extends AppCompatActivity {
     // Career views
     private TextView tvSkillsList;
     private Button btnMockInterview;
-
-    // Habits views
-    private TextView tvHabitsList;
-    private Button btnCheckInHabit;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,9 +102,9 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         sectionHome = findViewById(R.id.sectionHome);
         sectionAssistant = findViewById(R.id.sectionAssistant);
+        sectionVision = findViewById(R.id.sectionVision);
         sectionActions = findViewById(R.id.sectionActions);
         sectionCareer = findViewById(R.id.sectionCareer);
-        sectionHabits = findViewById(R.id.sectionHabits);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Home
@@ -141,6 +154,29 @@ public class MainActivity extends AppCompatActivity {
             voiceManager.speak(reply);
         });
 
+        // Vision Coach
+        ivCameraFrame = findViewById(R.id.ivCameraFrame);
+        tvLiveGuidance = findViewById(R.id.tvLiveGuidance);
+        tvPhotoScore = findViewById(R.id.tvPhotoScore);
+        tvPhotoFeedback = findViewById(R.id.tvPhotoFeedback);
+        btnCapturePhoto = findViewById(R.id.btnCapturePhoto);
+        btnCycleCoachMode = findViewById(R.id.btnCycleCoachMode);
+
+        btnCycleCoachMode.setOnClickListener(v -> {
+            coachModeIndex = (coachModeIndex + 1) % coachModes.length;
+            btnCycleCoachMode.setText("Mode: " + coachModes[coachModeIndex]);
+            Toast.makeText(this, "Camera Coach Mode: " + coachModes[coachModeIndex], Toast.LENGTH_SHORT).show();
+        });
+
+        btnCapturePhoto.setOnClickListener(v -> {
+            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            } else {
+                Toast.makeText(this, "Default camera app not accessible.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         // Native Actions Direct Triggers
         btnTriggerAlarm = findViewById(R.id.btnTriggerAlarm);
         btnTriggerTimer = findViewById(R.id.btnTriggerTimer);
@@ -178,16 +214,29 @@ public class MainActivity extends AppCompatActivity {
             tvAiResponse.setText(reply);
             voiceManager.speak(reply);
         });
+    }
 
-        // Habits
-        tvHabitsList = findViewById(R.id.tvHabitsList);
-        btnCheckInHabit = findViewById(R.id.btnCheckInHabit);
-        btnCheckInHabit.setOnClickListener(v -> {
-            dbHelper.checkInHabit("Coding");
-            dbHelper.checkInHabit("Routine");
-            refreshAllData();
-            Toast.makeText(this, "Checked in! Streaks incremented.", Toast.LENGTH_SHORT).show();
-        });
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK && data != null) {
+            Bundle extras = data.getExtras();
+            if (extras != null) {
+                Bitmap imageBitmap = (Bitmap) extras.get("data");
+                if (imageBitmap != null) {
+                    ivCameraFrame.setImageBitmap(imageBitmap);
+
+                    // Perform real computer vision analysis
+                    VisionCoachEngine.AnalysisResult res = VisionCoachEngine.analyzeBitmap(imageBitmap, coachModes[coachModeIndex]);
+
+                    tvLiveGuidance.setText(res.guidance);
+                    tvPhotoScore.setText("Score: " + res.overallScore + "/100 | Brightness: " + res.brightnessScore + " | Contrast: " + res.contrastScore + " | Sharpness: " + res.sharpnessScore);
+                    tvPhotoFeedback.setText("Positive: " + res.positiveFeedback + "\nImprovement: " + res.improvementFeedback);
+
+                    voiceManager.speak(res.guidance);
+                }
+            }
+        }
     }
 
     private void setupNavigation() {
@@ -195,9 +244,9 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
             sectionHome.setVisibility(View.GONE);
             sectionAssistant.setVisibility(View.GONE);
+            sectionVision.setVisibility(View.GONE);
             sectionActions.setVisibility(View.GONE);
             sectionCareer.setVisibility(View.GONE);
-            sectionHabits.setVisibility(View.GONE);
 
             if (id == R.id.nav_home) {
                 sectionHome.setVisibility(View.VISIBLE);
@@ -206,15 +255,14 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_assistant) {
                 sectionAssistant.setVisibility(View.VISIBLE);
                 return true;
+            } else if (id == R.id.nav_vision) {
+                sectionVision.setVisibility(View.VISIBLE);
+                return true;
             } else if (id == R.id.nav_actions) {
                 sectionActions.setVisibility(View.VISIBLE);
                 return true;
             } else if (id == R.id.nav_career) {
                 sectionCareer.setVisibility(View.VISIBLE);
-                refreshAllData();
-                return true;
-            } else if (id == R.id.nav_habits) {
-                sectionHabits.setVisibility(View.VISIBLE);
                 refreshAllData();
                 return true;
             }
@@ -223,10 +271,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshAllData() {
-        // Refresh Tasks
         List<String> tasks = dbHelper.getAllTasks();
-
-        // Refresh Skills
         List<String> skills = dbHelper.getAllSkills();
         StringBuilder skillSb = new StringBuilder();
         for (String s : skills) {
@@ -234,23 +279,11 @@ public class MainActivity extends AppCompatActivity {
         }
         tvSkillsList.setText(skillSb.length() > 0 ? skillSb.toString() : "No technical roadmaps loaded.");
 
-        // Refresh Habits
-        List<String> habits = dbHelper.getAllHabits();
-        StringBuilder habitSb = new StringBuilder();
-        for (String h : habits) {
-            habitSb.append(h).append("\n\n");
-        }
-        tvHabitsList.setText(habitSb.length() > 0 ? habitSb.toString() : "No active streaks recorded.");
-
-        // Finance Overview
         tvFinanceOverview.setText(dbHelper.getFinanceSummary());
-
-        // Update Briefing
-        tvDailyBrief.setText("Good day. " + tasks.size() + " active milestones scheduled across your career, health, and daily routines.");
+        tvDailyBrief.setText("Good day. " + tasks.size() + " active milestones scheduled across your career, vision coach, and routines.");
     }
 
     private void updateDeviceInfo() {
-        // RAM info
         ActivityManager actManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
         if (actManager != null) {
@@ -260,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
             tvMemoryInfo.setText("Available RAM: " + availMb + " MB / " + totalMb + " MB");
         }
 
-        // Battery info
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = registerReceiver(null, ifilter);
         if (batteryStatus != null) {

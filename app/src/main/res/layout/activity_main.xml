@@ -43,10 +43,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="EVOLVE AI • JARVIS OS"
+                        android:text="EVOLVE AI • VISION &amp; ACTION OS"
                         android:textColor="#00E5FF"
                         android:letterSpacing="0.15"
-                        android:textSize="11sp"
+                        android:textSize="10sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -109,7 +109,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:lineSpacingExtra="3dp"
-                            android:text="Good day. Your OS is primed for high-leverage execution. 4 milestones scheduled across career and health."
+                            android:text="Good day. Your OS is primed for high-leverage execution. 4 milestones scheduled across career, photography, and health."
                             android:textColor="#E0E6ED"
                             android:textSize="14sp" />
 
@@ -287,7 +287,114 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- SECTION 3: NATIVE PHONE ACTIONS CONTAINER -->
+            <!-- SECTION 3: EVOLVE AI VISION COACH CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionVision"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EVOLVE VISION COACH • SMART CAMERA"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
+
+                <!-- Camera Viewfinder / Preview Simulation Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#00E5FF"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#121829">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <ImageView
+                            android:id="@+id/ivCameraFrame"
+                            android:layout_width="match_parent"
+                            android:layout_height="220dp"
+                            android:background="#0A0E1A"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="Live Camera Preview Frame" />
+
+                        <!-- Live AI Guidance Banner -->
+                        <TextView
+                            android:id="@+id/tvLiveGuidance"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="#1F2A44"
+                            android:padding="12dp"
+                            android:text="✨ Live Guidance: Camera Ready. Tap 'Capture &amp; Analyze' for AI critique."
+                            android:textColor="#00E5FF"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <!-- Photographic Score Card -->
+                        <TextView
+                            android:id="@+id/tvPhotoScore"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Overall Score: --/100 | Brightness: -- | Contrast: -- | Sharpness: --"
+                            android:textColor="#E0E6ED"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/tvPhotoFeedback"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:lineSpacingExtra="3dp"
+                            android:text="Recommendations: Select Portrait, Food, Landscape, or Document mode below."
+                            android:textColor="#A0AEC0"
+                            android:textSize="12sp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="14dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCapturePhoto"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="6dp"
+                                android:backgroundTint="#00E5FF"
+                                android:text="📸 Capture &amp; Critique"
+                                android:textColor="#0A0E1A"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCycleCoachMode"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="6dp"
+                                android:backgroundTint="#7C4DFF"
+                                android:text="Mode: Portrait"
+                                android:textColor="#FFFFFF"
+                                app:cornerRadius="10dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- SECTION 4: NATIVE PHONE ACTIONS CONTAINER -->
             <LinearLayout
                 android:id="@+id/sectionActions"
                 android:layout_width="match_parent"
@@ -371,7 +478,7 @@
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- SECTION 4: CAREER & LEARNING ROADMAP CONTAINER -->
+            <!-- SECTION 5: CAREER & LEARNING ROADMAP CONTAINER -->
             <LinearLayout
                 android:id="@+id/sectionCareer"
                 android:layout_width="match_parent"
@@ -408,46 +515,6 @@
                     android:backgroundTint="#7C4DFF"
                     android:text="Start AI Mock Technical Interview"
                     android:textColor="#FFFFFF"
-                    app:cornerRadius="10dp" />
-            </LinearLayout>
-
-            <!-- SECTION 5: HABITS, HEALTH & FINANCE CONTAINER -->
-            <LinearLayout
-                android:id="@+id/sectionHabits"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="DAILY HABITS &amp; STREAK TRACKER"
-                    android:textColor="#7C4DFF"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="10dp" />
-
-                <TextView
-                    android:id="@+id/tvHabitsList"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingExtra="6dp"
-                    android:text="Loading habits..."
-                    android:textColor="#E0E6ED"
-                    android:textSize="14sp"
-                    android:background="#121829"
-                    android:padding="16dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCheckInHabit"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="#00E5FF"
-                    android:text="Check In Today's Coding &amp; Workout"
-                    android:textColor="#0A0E1A"
                     app:cornerRadius="10dp" />
             </LinearLayout>
 
