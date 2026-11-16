@@ -5,6 +5,9 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,13 +22,15 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle
+    - name: Set up Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.5'
 
-    - name: Build APK (Debug)
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Build APK (Assemble Debug)
+      run: gradle assembleDebug --stacktrace
 
-    - name: Upload APK to Artifacts (Direct Download)
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: PhoneAssistant-debug-apk
@@ -34,14 +39,13 @@ jobs:
 
     - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
       with:
         tag_name: v1.0.0-${{ github.run_number }}
         name: Phone Assistant APK v1.0.${{ github.run_number }}
         body: |
           ### 📱 Phone Assistant APK Ready to Install!
           - Auto cleans unnecessary background processes
-          - Monitors RAM & Battery
+          - Real-time RAM & Battery health monitoring
           - Screen Time quick access
           - Everyday background routine automated
           
