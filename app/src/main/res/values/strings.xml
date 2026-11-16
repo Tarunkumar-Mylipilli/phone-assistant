@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Phone Assistant AI</string>
+    <string name="app_name">Evolve AI</string>
     <string name="title_schedule">Everyday Schedule &amp; Tasks</string>
     <string name="title_diagnostics">Device Health &amp; Memory</string>
     <string name="clean_ram">Auto-Clean Background RAM</string>

@@ -1,184 +1,363 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F4F6F9"
-    android:padding="16dp">
+    android:background="#0A0E1A">
 
-    <LinearLayout
+    <!-- Main Scrollable Container -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="64dp"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Top Header with Glowing Orb -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="20dp"
+                android:padding="4dp">
+
+                <ImageView
+                    android:id="@+id/ivOrb"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/orb_gradient"
+                    android:contentDescription="Evolve AI Core Orb" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="EVOLVE AI"
+                        android:textColor="#00E5FF"
+                        android:letterSpacing="0.15"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Personal Life OS"
+                        android:textColor="#FFFFFF"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- SECTION 1: HOME DASHBOARD CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionHome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Morning Briefing Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#1F2A44"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#121829">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="DAILY OPERATING BRIEF"
+                            android:textColor="#00E5FF"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.1"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvDailyBrief"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:lineSpacingExtra="3dp"
+                            android:text="Good day. Your OS is primed for high-leverage execution. 4 milestones are scheduled today across Career, Health, and Daily routines."
+                            android:textColor="#E0E6ED"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Device Health & RAM Cleaner -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#1F2A44"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#121829">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SYSTEM DIAGNOSTICS &amp; RAM"
+                            android:textColor="#7C4DFF"
+                            android:textSize="11sp"
+                            android:letterSpacing="0.1"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMemoryInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="Available RAM: Loading..."
+                            android:textColor="#E0E6ED"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvBatteryInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Battery: Loading..."
+                            android:textColor="#A0AEC0"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCleanRam"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:backgroundTint="#7C4DFF"
+                            android:text="Clean Background Cache &amp; Apps"
+                            android:textColor="#FFFFFF"
+                            app:cornerRadius="10dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnScreenTimeSettings"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:backgroundTint="#1F2A44"
+                            android:text="Digital Wellbeing &amp; Limits"
+                            android:textColor="#00E5FF"
+                            app:cornerRadius="10dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- SECTION 2: AI ASSISTANT CHAT CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionAssistant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:strokeColor="#1F2A44"
+                    app:strokeWidth="1dp"
+                    app:cardBackgroundColor="#121829">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:id="@+id/tvAiResponse"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minLines="6"
+                            android:lineSpacingExtra="4dp"
+                            android:text="Hello, I am Evolve AI.\n\nAsk me anything regarding your day, career roadmap, workout routine, or type 'remember &lt;note&gt;' to save to permanent AI memory."
+                            android:textColor="#E0E6ED"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Query Input Box -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <EditText
+                        android:id="@+id/etUserQuery"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:background="#121829"
+                        android:hint="Ask Evolve AI or add a task..."
+                        android:textColorHint="#4A5568"
+                        android:textColor="#FFFFFF"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendQuery"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="#00E5FF"
+                        android:text="Send"
+                        android:textColor="#0A0E1A"
+                        app:cornerRadius="10dp" />
+                </LinearLayout>
+
+                <!-- Quick AI Command Chips -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/chipBriefing"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:text="Daily Brief"
+                        android:textColor="#00E5FF"
+                        app:strokeColor="#00E5FF" />
+
+                    <Button
+                        android:id="@+id/chipCareer"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="Career Plan"
+                        android:textColor="#7C4DFF"
+                        app:strokeColor="#7C4DFF" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- SECTION 3: MY DAY PLANNER CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionPlanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SCHEDULED MILESTONES &amp; TASKS"
+                    android:textColor="#00E5FF"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/tvPlannerList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingExtra="6dp"
+                    android:text="Loading tasks..."
+                    android:textColor="#E0E6ED"
+                    android:textSize="14sp"
+                    android:background="#121829"
+                    android:padding="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddNewTask"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="#00E5FF"
+                    android:text="+ Add Milestone Task"
+                    android:textColor="#0A0E1A"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+            <!-- SECTION 4: AI MEMORY CONTAINER -->
+            <LinearLayout
+                android:id="@+id/sectionMemory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PERSISTENT USER-CONTROLLED MEMORY"
+                    android:textColor="#7C4DFF"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.1"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/tvMemoryList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingExtra="6dp"
+                    android:text="Loading memories..."
+                    android:textColor="#E0E6ED"
+                    android:textSize="14sp"
+                    android:background="#121829"
+                    android:padding="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearMemory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:backgroundTint="#E53935"
+                    android:text="Clear AI Memory Store"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_gravity="bottom"
+        android:background="#0D1222"
+        app:itemTextColor="#00E5FF"
+        app:menu="@menu/bottom_nav_menu" />
 
-        <!-- Header Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp"
-            app:cardBackgroundColor="#1E88E5">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Phone Auto-Assistant"
-                    android:textColor="#FFFFFF"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Status: Active • Monitoring RAM &amp; Daily Schedule"
-                    android:textColor="#E3F2FD"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Device Diagnostic Info -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Device Diagnostics &amp; Memory"
-                    android:textColor="#212121"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvMemoryInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Available RAM: Loading..."
-                    android:textColor="#555555"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvBatteryInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Battery: Loading..."
-                    android:textColor="#555555"
-                    android:textSize="15sp" />
-
-                <Button
-                    android:id="@+id/btnCleanRam"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="#00897B"
-                    android:text="Clean Background Cache &amp; Apps"
-                    android:textColor="#FFFFFF" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Everyday Schedule Section -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Everyday Routine &amp; Schedule"
-                    android:textColor="#212121"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDailySchedule"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="• 08:00 AM - Morning Briefing &amp; Data Check\n• 01:00 PM - Mid-Day Memory Optimization\n• 09:30 PM - Night Routine &amp; Screen Time Alert"
-                    android:textColor="#424242"
-                    android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/btnScheduleSync"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="#1E88E5"
-                    android:text="Activate Daily Auto-Routine"
-                    android:textColor="#FFFFFF" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Screen Time & App Restriction Settings -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Screen Time &amp; App Limits"
-                    android:textColor="#212121"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="Directly adjust Digital Wellbeing timers or remove app lock restrictions."
-                    android:textColor="#666666"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btnScreenTimeSettings"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="#FB8C00"
-                    android:text="Open Screen Time / Digital Wellbeing"
-                    android:textColor="#FFFFFF" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-    </LinearLayout>
-</ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

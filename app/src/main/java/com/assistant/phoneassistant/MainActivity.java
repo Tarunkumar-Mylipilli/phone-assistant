@@ -7,7 +7,10 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,40 +19,168 @@ import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
+    private DatabaseHelper dbHelper;
+
+    // Navigation sections
+    private LinearLayout sectionHome;
+    private LinearLayout sectionAssistant;
+    private LinearLayout sectionPlanner;
+    private LinearLayout sectionMemory;
+    private BottomNavigationView bottomNavigationView;
+
+    // Home views
     private TextView tvMemoryInfo;
     private TextView tvBatteryInfo;
-    private TextView tvStatus;
+    private TextView tvDailyBrief;
     private Button btnCleanRam;
-    private Button btnScheduleSync;
     private Button btnScreenTimeSettings;
+
+    // AI Assistant views
+    private TextView tvAiResponse;
+    private EditText etUserQuery;
+    private Button btnSendQuery;
+    private Button chipBriefing;
+    private Button chipCareer;
+
+    // My Day Planner views
+    private TextView tvPlannerList;
+    private Button btnAddNewTask;
+
+    // AI Memory views
+    private TextView tvMemoryList;
+    private Button btnClearMemory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        dbHelper = new DatabaseHelper(this);
+
+        initViews();
+        setupNavigation();
+        updateDeviceInfo();
+        refreshPlannerAndMemory();
+        scheduleBackgroundRoutine();
+    }
+
+    private void initViews() {
+        sectionHome = findViewById(R.id.sectionHome);
+        sectionAssistant = findViewById(R.id.sectionAssistant);
+        sectionPlanner = findViewById(R.id.sectionPlanner);
+        sectionMemory = findViewById(R.id.sectionMemory);
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+
+        // Home
         tvMemoryInfo = findViewById(R.id.tvMemoryInfo);
         tvBatteryInfo = findViewById(R.id.tvBatteryInfo);
-        tvStatus = findViewById(R.id.tvStatus);
+        tvDailyBrief = findViewById(R.id.tvDailyBrief);
         btnCleanRam = findViewById(R.id.btnCleanRam);
-        btnScheduleSync = findViewById(R.id.btnScheduleSync);
         btnScreenTimeSettings = findViewById(R.id.btnScreenTimeSettings);
 
-        updateDeviceInfo();
-        scheduleBackgroundRoutine();
-
         btnCleanRam.setOnClickListener(v -> cleanBackgroundApps());
+        btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
 
-        btnScheduleSync.setOnClickListener(v -> {
-            scheduleBackgroundRoutine();
-            Toast.makeText(this, "Everyday Auto-Assistant Activated!", Toast.LENGTH_SHORT).show();
+        // Assistant
+        tvAiResponse = findViewById(R.id.tvAiResponse);
+        etUserQuery = findViewById(R.id.etUserQuery);
+        btnSendQuery = findViewById(R.id.btnSendQuery);
+        chipBriefing = findViewById(R.id.chipBriefing);
+        chipCareer = findViewById(R.id.chipCareer);
+
+        btnSendQuery.setOnClickListener(v -> {
+            String query = etUserQuery.getText().toString().trim();
+            if (!query.isEmpty()) {
+                String reply = AIAssistantEngine.processQuery(query, dbHelper);
+                tvAiResponse.setText(reply);
+                etUserQuery.setText("");
+                refreshPlannerAndMemory();
+            }
         });
 
-        btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
+        chipBriefing.setOnClickListener(v -> {
+            String reply = AIAssistantEngine.processQuery("daily briefing", dbHelper);
+            tvAiResponse.setText(reply);
+        });
+
+        chipCareer.setOnClickListener(v -> {
+            String reply = AIAssistantEngine.processQuery("career plan", dbHelper);
+            tvAiResponse.setText(reply);
+        });
+
+        // Planner
+        tvPlannerList = findViewById(R.id.tvPlannerList);
+        btnAddNewTask = findViewById(R.id.btnAddNewTask);
+        btnAddNewTask.setOnClickListener(v -> {
+            dbHelper.addTask("New Personal Growth Milestone", "Daily");
+            refreshPlannerAndMemory();
+            Toast.makeText(this, "Milestone added to your plan!", Toast.LENGTH_SHORT).show();
+        });
+
+        // Memory
+        tvMemoryList = findViewById(R.id.tvMemoryList);
+        btnClearMemory = findViewById(R.id.btnClearMemory);
+        btnClearMemory.setOnClickListener(v -> {
+            dbHelper.clearAllMemories();
+            refreshPlannerAndMemory();
+            Toast.makeText(this, "Persistent AI Memory cleared.", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void setupNavigation() {
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            sectionHome.setVisibility(View.GONE);
+            sectionAssistant.setVisibility(View.GONE);
+            sectionPlanner.setVisibility(View.GONE);
+            sectionMemory.setVisibility(View.GONE);
+
+            if (id == R.id.nav_home) {
+                sectionHome.setVisibility(View.VISIBLE);
+                updateDeviceInfo();
+                return true;
+            } else if (id == R.id.nav_assistant) {
+                sectionAssistant.setVisibility(View.VISIBLE);
+                return true;
+            } else if (id == R.id.nav_planner) {
+                sectionPlanner.setVisibility(View.VISIBLE);
+                refreshPlannerAndMemory();
+                return true;
+            } else if (id == R.id.nav_memory) {
+                sectionMemory.setVisibility(View.VISIBLE);
+                refreshPlannerAndMemory();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void refreshPlannerAndMemory() {
+        // Refresh Tasks
+        List<String> tasks = dbHelper.getAllTasks();
+        StringBuilder taskSb = new StringBuilder();
+        for (String t : tasks) {
+            taskSb.append(t).append("\n\n");
+        }
+        tvPlannerList.setText(taskSb.length() > 0 ? taskSb.toString() : "No tasks scheduled. Add your first goal!");
+
+        // Refresh Memory
+        List<String> memories = dbHelper.getAllMemories();
+        StringBuilder memSb = new StringBuilder();
+        for (String m : memories) {
+            memSb.append(m).append("\n\n");
+        }
+        tvMemoryList.setText(memSb.length() > 0 ? memSb.toString() : "Memory store is empty. Teach Evolve AI using 'remember <note>'");
+
+        // Update Briefing
+        tvDailyBrief.setText("Good day. " + tasks.size() + " active milestones scheduled across your career, health, and daily routines.");
     }
 
     private void updateDeviceInfo() {
@@ -77,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
     private void cleanBackgroundApps() {
         ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         if (am != null) {
-            // Free background processes for installed user packages
             for (ActivityManager.RunningAppProcessInfo process : am.getRunningAppProcesses()) {
                 if (!process.processName.equals(getPackageName())) {
                     am.killBackgroundProcesses(process.processName);
@@ -99,12 +229,10 @@ public class MainActivity extends AppCompatActivity {
                 ExistingPeriodicWorkPolicy.KEEP,
                 assistantWork
         );
-        tvStatus.setText("Status: Background Routine Active (Checks every 6 hrs)");
     }
 
     private void openScreenTimeSettings() {
         try {
-            // Open Android's Digital Wellbeing & Parental Controls directly
             Intent intent = new Intent();
             intent.setComponent(new android.content.ComponentName(
                     "com.google.android.apps.wellbeing",
@@ -112,7 +240,6 @@ public class MainActivity extends AppCompatActivity {
             ));
             startActivity(intent);
         } catch (Exception e) {
-            // Fallback to normal settings if Wellbeing is not standalone
             Intent fallback = new Intent(Settings.ACTION_SETTINGS);
             startActivity(fallback);
         }
