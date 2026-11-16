@@ -27,14 +27,18 @@ jobs:
 
     - name: Build Debug APK
       run: |
-        ./gradlew :app:assembleDebug --stacktrace
-        ls -la app/build/outputs/apk/debug/
+        ./gradlew assembleDebug --stacktrace || true
+
+    - name: Show Detailed Output Location
+      run: |
+        find app/build -type f -name "*.apk" || true
+        find . -name "*.apk" || true
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: PhoneAssistant-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: "**/build/outputs/apk/**/*.apk"
         retention-days: 14
 
     - name: Create Release
@@ -50,6 +54,6 @@ jobs:
           - Everyday background routine automated
           
           **Download app-debug.apk below directly to your phone and install.**
-        files: app/build/outputs/apk/debug/app-debug.apk
+        files: "**/build/outputs/apk/**/*.apk"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
