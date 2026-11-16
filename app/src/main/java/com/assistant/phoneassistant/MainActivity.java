@@ -27,11 +27,13 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends AppCompatActivity {
 
     private DatabaseHelper dbHelper;
+    private LocalModelManager modelManager;
 
     // Navigation sections
     private LinearLayout sectionHome;
     private LinearLayout sectionAssistant;
     private LinearLayout sectionPlanner;
+    private LinearLayout sectionModels;
     private LinearLayout sectionMemory;
     private BottomNavigationView bottomNavigationView;
 
@@ -53,9 +55,16 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvPlannerList;
     private Button btnAddNewTask;
 
+    // AI Models views
+    private TextView tvModelCatalog;
+    private Button btnSwitchEngine;
+
     // AI Memory views
     private TextView tvMemoryList;
     private Button btnClearMemory;
+
+    private int engineIndex = 0;
+    private final String[] engines = {"SmolLM2-1.7B-Q4", "Qwen2.5-1.5B-Q4", "Llama-3.2-1B-Q4", "Local-Rule-Based"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,11 +72,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = new DatabaseHelper(this);
+        modelManager = new LocalModelManager(this);
 
         initViews();
         setupNavigation();
         updateDeviceInfo();
         refreshPlannerAndMemory();
+        renderModelCatalog();
         scheduleBackgroundRoutine();
     }
 
@@ -75,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         sectionHome = findViewById(R.id.sectionHome);
         sectionAssistant = findViewById(R.id.sectionAssistant);
         sectionPlanner = findViewById(R.id.sectionPlanner);
+        sectionModels = findViewById(R.id.sectionModels);
         sectionMemory = findViewById(R.id.sectionMemory);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
@@ -98,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         btnSendQuery.setOnClickListener(v -> {
             String query = etUserQuery.getText().toString().trim();
             if (!query.isEmpty()) {
-                String reply = AIAssistantEngine.processQuery(query, dbHelper);
+                String reply = AIAssistantEngine.processQuery(query, dbHelper, modelManager);
                 tvAiResponse.setText(reply);
                 etUserQuery.setText("");
                 refreshPlannerAndMemory();
@@ -106,12 +118,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         chipBriefing.setOnClickListener(v -> {
-            String reply = AIAssistantEngine.processQuery("daily briefing", dbHelper);
+            String reply = AIAssistantEngine.processQuery("daily briefing", dbHelper, modelManager);
             tvAiResponse.setText(reply);
         });
 
         chipCareer.setOnClickListener(v -> {
-            String reply = AIAssistantEngine.processQuery("career plan", dbHelper);
+            String reply = AIAssistantEngine.processQuery("career plan", dbHelper, modelManager);
             tvAiResponse.setText(reply);
         });
 
@@ -119,9 +131,19 @@ public class MainActivity extends AppCompatActivity {
         tvPlannerList = findViewById(R.id.tvPlannerList);
         btnAddNewTask = findViewById(R.id.btnAddNewTask);
         btnAddNewTask.setOnClickListener(v -> {
-            dbHelper.addTask("New Personal Growth Milestone", "Daily");
+            dbHelper.addTask("Personal Growth Milestone", "Career");
             refreshPlannerAndMemory();
             Toast.makeText(this, "Milestone added to your plan!", Toast.LENGTH_SHORT).show();
+        });
+
+        // Models
+        tvModelCatalog = findViewById(R.id.tvModelCatalog);
+        btnSwitchEngine = findViewById(R.id.btnSwitchEngine);
+        btnSwitchEngine.setOnClickListener(v -> {
+            engineIndex = (engineIndex + 1) % engines.length;
+            modelManager.setActiveModelId(engines[engineIndex]);
+            renderModelCatalog();
+            Toast.makeText(this, "Switched active AI Engine to: " + engines[engineIndex], Toast.LENGTH_SHORT).show();
         });
 
         // Memory
@@ -134,12 +156,27 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void renderModelCatalog() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Active Engine: ").append(modelManager.getActiveModelId().toUpperCase()).append("\n");
+        sb.append("Target Device: Realme GT 2 (Snapdragon 888, 8GB RAM)\n\n");
+
+        for (ModelInfo m : modelManager.getAvailableModels()) {
+            sb.append("• ").append(m.getName()).append("\n");
+            sb.append("  Specs: ").append(m.getParameterSize()).append(" | RAM Req: ~").append(m.getRecommendedRamMb()).append(" MB\n");
+            sb.append("  Note: ").append(m.getDescription()).append("\n\n");
+        }
+        sb.append("Operating Rule: Zero paid APIs. Models run 100% on-device or via fallback intelligence.");
+        tvModelCatalog.setText(sb.toString());
+    }
+
     private void setupNavigation() {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             sectionHome.setVisibility(View.GONE);
             sectionAssistant.setVisibility(View.GONE);
             sectionPlanner.setVisibility(View.GONE);
+            sectionModels.setVisibility(View.GONE);
             sectionMemory.setVisibility(View.GONE);
 
             if (id == R.id.nav_home) {
@@ -152,6 +189,10 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_planner) {
                 sectionPlanner.setVisibility(View.VISIBLE);
                 refreshPlannerAndMemory();
+                return true;
+            } else if (id == R.id.nav_models) {
+                sectionModels.setVisibility(View.VISIBLE);
+                renderModelCatalog();
                 return true;
             } else if (id == R.id.nav_memory) {
                 sectionMemory.setVisibility(View.VISIBLE);
