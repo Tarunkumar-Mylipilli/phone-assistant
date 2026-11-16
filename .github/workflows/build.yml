@@ -22,39 +22,29 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: Setup Gradle Cache and Tool
+      uses: gradle/actions/setup-gradle@v3
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
     - name: Build Debug APK
+      run: ./gradlew assembleDebug --stacktrace
+
+    - name: Collect and Release APK
       run: |
-        ./gradlew assembleDebug
+        mkdir -p dist
+        cp app/build/outputs/apk/debug/*.apk dist/phone-assistant.apk
+        ls -la dist/
 
-    - name: Verify and Move APK
-      run: |
-        mkdir -p release_apk
-        find . -name "*.apk" -exec cp {} release_apk/phone-assistant.apk \;
-        ls -la release_apk/
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: PhoneAssistant-apk
-        path: release_apk/phone-assistant.apk
-        retention-days: 14
-
-    - name: Create Release
+    - name: Create GitHub Release with APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: release-v1.0.${{ github.run_number }}
+        tag_name: app-v1.0.${{ github.run_number }}
         name: Phone Assistant APK v1.0.${{ github.run_number }}
         body: |
-          ### 📱 Phone Assistant APK Ready to Install!
-          - Auto cleans unnecessary background processes
-          - Real-time RAM & Battery health monitoring
-          - Screen Time quick access
-          - Everyday background routine automated
-          
-          **Download phone-assistant.apk below directly to your phone and install.**
-        files: release_apk/phone-assistant.apk
+          ### 📱 Phone Assistant APK Ready!
+          Download `phone-assistant.apk` below directly to your phone and tap Install.
+        files: dist/phone-assistant.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
