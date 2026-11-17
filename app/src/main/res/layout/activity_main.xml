@@ -9,7 +9,7 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="64dp"
+        android:layout_marginBottom="72dp"
         android:padding="16dp">
 
         <LinearLayout
@@ -58,12 +58,13 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <!-- Voice Listen / Speech to Text Button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnVoiceSpeak"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="38dp"
-                    android:text="Speak 🔊"
+                    android:text="Speak 🎙️"
                     android:textColor="#00E5FF"
                     android:textSize="11sp"
                     app:strokeColor="#00E5FF"
@@ -268,7 +269,7 @@
                             android:id="@+id/tvAiResponse"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Awaiting command. I can schedule alarms, set timers, launch apps, manage learning curricula, or store memory."
+                            android:text="Awaiting command. Speak via the top mic or type below."
                             android:textColor="#FFFFFF"
                             android:textSize="14sp"
                             android:lineSpacingExtra="4dp" />
@@ -295,7 +296,7 @@
                             android:id="@+id/etUserQuery"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Type command (e.g. 'Schedule SQL learning at 8 PM')"
+                            android:hint="Type or speak (e.g. 'Open YouTube', 'Set alarm 4:30 AM')"
                             android:textColorHint="#546E7A"
                             android:textColor="#FFFFFF"
                             android:background="@null"
@@ -327,7 +328,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="32dp"
                     app:cardCornerRadius="16dp"
                     app:strokeColor="#1F2A44"
                     app:strokeWidth="1dp"
@@ -368,22 +369,26 @@
                             android:textColor="#CFD8DC"
                             android:textSize="13sp"
                             android:lineSpacingExtra="3dp"
-                            android:layout_marginBottom="14dp" />
+                            android:layout_marginBottom="18dp" />
 
+                        <!-- Enhanced Button Layout with Extra Padding & Fixed Height to prevent text clipping -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnCompleteLesson"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
+                            android:layout_height="52dp"
                             android:text="COMPLETE LESSON &amp; TAKE QUIZ"
                             android:textColor="#0A0E1A"
+                            android:textSize="12sp"
                             android:textStyle="bold"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="8dp"
                             app:backgroundTint="#00E5FF"
                             app:cornerRadius="10dp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
-            <!-- SECTION 4: VISION COACH -->
+            <!-- SECTION 4: VISION COACH WITH CAMERAX PREVIEW -->
             <LinearLayout
                 android:id="@+id/sectionVision"
                 android:layout_width="match_parent"
@@ -409,28 +414,36 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="AI VISION COACH &amp; CAMERA VIEWFINDER"
+                            android:text="AI VISION COACH &amp; CAMERAX LIVE FEED"
                             android:textColor="#00E5FF"
                             android:letterSpacing="0.1"
                             android:textSize="11sp"
                             android:textStyle="bold"
                             android:layout_marginBottom="8dp" />
 
+                        <!-- CameraX PreviewView for Live Sensor Stream -->
+                        <androidx.camera.view.PreviewView
+                            android:id="@+id/previewView"
+                            android:layout_width="match_parent"
+                            android:layout_height="240dp"
+                            android:background="#000000" />
+
+                        <!-- Captured Frame View (hidden by default) -->
                         <ImageView
                             android:id="@+id/ivCameraFrame"
                             android:layout_width="match_parent"
-                            android:layout_height="220dp"
+                            android:layout_height="240dp"
                             android:scaleType="centerCrop"
+                            android:visibility="gone"
                             android:background="#0A0E1A"
-                            android:src="@drawable/orb_gradient"
-                            android:contentDescription="Camera Preview / Captured Frame" />
+                            android:contentDescription="Captured Frame" />
 
                         <TextView
                             android:id="@+id/tvLiveGuidance"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:text="✨ Ready: Tap below to capture and analyze frame."
+                            android:text="✨ Real-Time Guidance: Analyzing scene parameters..."
                             android:textColor="#00E5FF"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -440,7 +453,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Quality Score: Awaiting Capture"
+                            android:text="Quality Score: Live Sensor Stream Active"
                             android:textColor="#FFFFFF"
                             android:textSize="12sp" />
 
@@ -449,7 +462,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Observations &amp; Improvements: Tap capture to analyze."
+                            android:text="Laplacian Edge Variance &amp; Rule of Thirds Active"
                             android:textColor="#9E9E9E"
                             android:textSize="11sp"
                             android:layout_marginBottom="14dp" />
@@ -477,7 +490,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="44dp"
                                 android:layout_weight="1"
-                                android:text="📸 CAPTURE"
+                                android:text="📸 ANALYZE FRAME"
                                 android:textColor="#0A0E1A"
                                 android:textStyle="bold"
                                 android:textSize="11sp"

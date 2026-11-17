@@ -1,13 +1,15 @@
 package com.assistant.phoneassistant;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.BatteryManager;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
@@ -17,20 +19,36 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_IMAGE_CAPTURE = 101;
+    private static final int REQUEST_SPEECH_RECOGNITION = 201;
+    private static final int REQUEST_CAMERA_PERMISSION = 202;
 
     private DatabaseHelper dbHelper;
     private LocalModelManager modelManager;
@@ -69,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private LearningCurriculumEngine.Lesson currentActiveLesson;
 
     // Vision Coach views
+    private PreviewView previewView;
     private ImageView ivCameraFrame;
     private TextView tvLiveGuidance;
     private TextView tvPhotoScore;
@@ -76,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnCapturePhoto;
     private Button btnCycleCoachMode;
 
+    private ExecutorService cameraExecutor;
     private int coachModeIndex = 0;
     private final String[] coachModes = {"Portrait", "Food", "Landscape", "Document", "Outfit"};
 
@@ -90,10 +110,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        dbHelper = new DatabaseHelper(this);
+        // Use thread-safe singleton DatabaseHelper to eliminate lock crashes
+        dbHelper = DatabaseHelper.getInstance(this);
         modelManager = new LocalModelManager(this);
         voiceManager = new VoiceManager(this);
         actionManager = new AndroidActionManager(this);
+
+        cameraExecutor = Executors.newSingleThreadExecutor();
 
         initViews();
         setupNavigation();
@@ -120,11 +143,9 @@ public class MainActivity extends AppCompatActivity {
 
         btnCleanRam.setOnClickListener(v -> cleanBackgroundApps());
         btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
-        btnVoiceSpeak.setOnClickListener(v -> {
-            String briefText = tvDailyBrief.getText().toString();
-            voiceManager.speak("Evolve A I Status. " + briefText);
-            Toast.makeText(this, "Speaking status...", Toast.LENGTH_SHORT).show();
-        });
+
+        // 1. FIXED SPEAK BUTTON: Launches Speech-To-Text intent to listen to user
+        btnVoiceSpeak.setOnClickListener(v -> startVoiceRecognition());
 
         // Assistant
         tvAiResponse = findViewById(R.id.tvAiResponse);
@@ -181,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Vision Coach
+        previewView = findViewById(R.id.previewView);
         ivCameraFrame = findViewById(R.id.ivCameraFrame);
         tvLiveGuidance = findViewById(R.id.tvLiveGuidance);
         tvPhotoScore = findViewById(R.id.tvPhotoScore);
@@ -195,11 +217,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnCapturePhoto.setOnClickListener(v -> {
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            if (previewView.getBitmap() != null) {
+                Bitmap bmp = previewView.getBitmap();
+                VisionCoachEngine.AnalysisResult res = VisionCoachEngine.analyzeBitmap(bmp, coachModes[coachModeIndex]);
+                tvLiveGuidance.setText(res.guidance);
+                tvPhotoScore.setText("Score: " + res.overallScore + "/100 | Brightness: " + res.brightnessScore + " | Contrast: " + res.contrastScore + " | Sharpness: " + res.sharpnessScore);
+                tvPhotoFeedback.setText("Positive: " + res.positiveFeedback + "\nImprovement: " + res.improvementFeedback);
+                voiceManager.speak(res.guidance);
             } else {
-                Toast.makeText(this, "Camera hardware not accessible.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Frame buffer aligning...", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -232,25 +258,74 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Start on-device Speech-To-Text voice recognition.
+     */
+    private void startVoiceRecognition() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Listening for Evolve AI command...");
+        try {
+            startActivityForResult(intent, REQUEST_SPEECH_RECOGNITION);
+        } catch (Exception e) {
+            Toast.makeText(this, "Voice recognition not supported on device.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Start CameraX PreviewView stream.
+     */
+    private void startCameraX() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            return;
+        }
+
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+
+                Preview preview = new Preview.Builder().build();
+                preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+                CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+
+                cameraProvider.unbindAll();
+                cameraProvider.bindToLifecycle(this, cameraSelector, preview);
+
+            } catch (ExecutionException | InterruptedException e) {
+                Toast.makeText(this, "Failed to start camera: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startCameraX();
+            } else {
+                Toast.makeText(this, "Camera permission required for Vision Coach.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK && data != null) {
-            Bundle extras = data.getExtras();
-            if (extras != null) {
-                Bitmap imageBitmap = (Bitmap) extras.get("data");
-                if (imageBitmap != null) {
-                    ivCameraFrame.setImageBitmap(imageBitmap);
-
-                    // Perform real computer vision analysis
-                    VisionCoachEngine.AnalysisResult res = VisionCoachEngine.analyzeBitmap(imageBitmap, coachModes[coachModeIndex]);
-
-                    tvLiveGuidance.setText(res.guidance);
-                    tvPhotoScore.setText("Score: " + res.overallScore + "/100 | Brightness: " + res.brightnessScore + " | Contrast: " + res.contrastScore + " | Sharpness: " + res.sharpnessScore);
-                    tvPhotoFeedback.setText("Positive: " + res.positiveFeedback + "\nImprovement: " + res.improvementFeedback);
-
-                    voiceManager.speak(res.guidance);
-                }
+        if (requestCode == REQUEST_SPEECH_RECOGNITION && resultCode == RESULT_OK && data != null) {
+            ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (result != null && !result.isEmpty()) {
+                String spokenText = result.get(0);
+                etUserQuery.setText(spokenText);
+                bottomNavigationView.setSelectedItemId(R.id.nav_assistant);
+                String reply = AIAssistantEngine.processQuery(spokenText, dbHelper, modelManager, actionManager);
+                tvAiResponse.setText(reply);
+                refreshAllData();
+                voiceManager.speak(reply);
             }
         }
     }
@@ -277,6 +352,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (id == R.id.nav_vision) {
                 sectionVision.setVisibility(View.VISIBLE);
+                startCameraX();
                 return true;
             } else if (id == R.id.nav_actions) {
                 sectionActions.setVisibility(View.VISIBLE);
@@ -375,6 +451,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (voiceManager != null) {
             voiceManager.shutdown();
+        }
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
         }
         super.onDestroy();
     }

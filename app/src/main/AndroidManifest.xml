@@ -24,6 +24,27 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- Android 11+ Package Visibility Queries for App Launching -->
+    <queries>
+        <!-- Common Apps for Direct Launching -->
+        <package android:name="com.google.android.youtube" />
+        <package android:name="com.whatsapp" />
+        <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.android.chrome" />
+        <package android:name="com.spotify.music" />
+        <package android:name="com.google.android.deskclock" />
+        <package android:name="com.coloros.alarm" />
+        <package android:name="com.oppo.alarm" />
+        <!-- Generic Intent query support -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@android:drawable/sym_def_app_icon"

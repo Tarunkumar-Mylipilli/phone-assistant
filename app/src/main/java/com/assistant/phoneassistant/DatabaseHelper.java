@@ -10,14 +10,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DatabaseHelper: Persistent SQLite storage for Evolve AI.
- * Stores tasks, habits, learning roadmaps, prepared lesson notes, and persistent AI memory.
- * Zero hardcoded/fabricated sample records — completely user-owned data.
+ * DatabaseHelper: Singleton SQLite Database Manager.
+ * Prevents SQLiteDatabaseLockedException by sharing a single synchronized instance.
+ * Uses try-with-resources across all database read operations.
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "evolve_ai.db";
     private static final int DATABASE_VERSION = 3;
+
+    private static DatabaseHelper instance;
+
+    public static synchronized DatabaseHelper getInstance(Context context) {
+        if (instance == null) {
+            instance = new DatabaseHelper(context.getApplicationContext());
+        }
+        return instance;
+    }
 
     // 1. Tasks & Planner Table
     public static final String TABLE_TASKS = "tasks";
@@ -56,7 +65,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_LESSON_TITLE = "title";
     public static final String COLUMN_LESSON_ORDER = "order_index";
     public static final String COLUMN_LESSON_DURATION = "duration";
-    public static final String COLUMN_LESSON_STATUS = "status"; // NOT_STARTED, PREPARING, READY, IN_PROGRESS, COMPLETED, NEEDS_REVISION
+    public static final String COLUMN_LESSON_STATUS = "status";
     public static final String COLUMN_LESSON_NOTES = "notes_content";
     public static final String COLUMN_LESSON_QUIZ = "quiz_json";
 
@@ -73,27 +82,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Tasks
         db.execSQL("CREATE TABLE " + TABLE_TASKS + " (" +
                 COLUMN_TASK_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_TASK_TITLE + " TEXT, " +
                 COLUMN_TASK_CATEGORY + " TEXT, " +
                 COLUMN_TASK_COMPLETED + " INTEGER DEFAULT 0)");
 
-        // Memory
         db.execSQL("CREATE TABLE " + TABLE_MEMORY + " (" +
                 COLUMN_MEMORY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_MEMORY_KEY + " TEXT, " +
                 COLUMN_MEMORY_VALUE + " TEXT)");
 
-        // Habits
         db.execSQL("CREATE TABLE " + TABLE_HABITS + " (" +
                 COLUMN_HABIT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_HABIT_NAME + " TEXT, " +
                 COLUMN_HABIT_STREAK + " INTEGER DEFAULT 0, " +
                 COLUMN_HABIT_DONE_TODAY + " INTEGER DEFAULT 0)");
 
-        // Learning Schedule
         db.execSQL("CREATE TABLE " + TABLE_LEARNING_SCHEDULE + " (" +
                 COLUMN_SCHED_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_SCHED_SUBJECT + " TEXT, " +
@@ -102,7 +107,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_SCHED_DURATION + " INTEGER, " +
                 COLUMN_SCHED_ACTIVE + " INTEGER DEFAULT 1)");
 
-        // Lessons & Curriculum Notes
         db.execSQL("CREATE TABLE " + TABLE_LESSONS + " (" +
                 COLUMN_LESSON_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_LESSON_SUBJECT + " TEXT, " +
@@ -114,7 +118,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_LESSON_NOTES + " TEXT, " +
                 COLUMN_LESSON_QUIZ + " TEXT)");
 
-        // Finance
         db.execSQL("CREATE TABLE " + TABLE_FINANCE + " (" +
                 COLUMN_FINANCE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_FINANCE_TITLE + " TEXT, " +
@@ -135,7 +138,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // ----------------- LEARNING SCHEDULE & CURRICULUM -----------------
 
-    public void saveLearningSchedule(String subject, int hour, int minute, int durationMins) {
+    public synchronized void saveLearningSchedule(String subject, int hour, int minute, int durationMins) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_SCHED_SUBJECT, subject);
@@ -145,13 +148,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put(COLUMN_SCHED_ACTIVE, 1);
         db.insert(TABLE_LEARNING_SCHEDULE, null, cv);
 
-        // Check if curriculum exists for this subject, if not generate it
-        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LESSONS + " WHERE " + COLUMN_LESSON_SUBJECT + " LIKE ?", new String[]{"%" + subject + "%"});
         boolean exists = false;
-        if (cursor.moveToFirst()) {
-            exists = cursor.getInt(0) > 0;
+        try (Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LESSONS + " WHERE " + COLUMN_LESSON_SUBJECT + " LIKE ?", new String[]{"%" + subject + "%"})) {
+            if (cursor.moveToFirst()) {
+                exists = cursor.getInt(0) > 0;
+            }
         }
-        cursor.close();
 
         if (!exists) {
             List<LearningCurriculumEngine.Lesson> roadmap = LearningCurriculumEngine.generateCurriculum(subject, "Beginner to Advanced");
@@ -170,13 +172,36 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public List<LearningCurriculumEngine.Lesson> getLessonsForSubject(String subject) {
+    public synchronized List<LearningCurriculumEngine.Lesson> getLessonsForSubject(String subject) {
         List<LearningCurriculumEngine.Lesson> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT id, subject, module_name, title, order_index, duration, status, notes_content, quiz_json FROM " + TABLE_LESSONS +
-                " WHERE subject LIKE ? ORDER BY order_index ASC", new String[]{"%" + subject + "%"});
-        if (cursor.moveToFirst()) {
-            do {
+        try (Cursor cursor = db.rawQuery("SELECT id, subject, module_name, title, order_index, duration, status, notes_content, quiz_json FROM " + TABLE_LESSONS +
+                " WHERE subject LIKE ? ORDER BY order_index ASC", new String[]{"%" + subject + "%"})) {
+            if (cursor.moveToFirst()) {
+                do {
+                    LearningCurriculumEngine.Lesson l = new LearningCurriculumEngine.Lesson(
+                            cursor.getString(1),
+                            cursor.getString(2),
+                            cursor.getString(3),
+                            cursor.getInt(4),
+                            cursor.getInt(5),
+                            cursor.getString(6),
+                            cursor.getString(7),
+                            cursor.getString(8)
+                    );
+                    l.id = cursor.getLong(0);
+                    list.add(l);
+                } while (cursor.moveToNext());
+            }
+        }
+        return list;
+    }
+
+    public synchronized LearningCurriculumEngine.Lesson getNextReadyLesson() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        try (Cursor cursor = db.rawQuery("SELECT id, subject, module_name, title, order_index, duration, status, notes_content, quiz_json FROM " + TABLE_LESSONS +
+                " WHERE status = 'READY' ORDER BY id ASC LIMIT 1", null)) {
+            if (cursor.moveToFirst()) {
                 LearningCurriculumEngine.Lesson l = new LearningCurriculumEngine.Lesson(
                         cursor.getString(1),
                         cursor.getString(2),
@@ -188,37 +213,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         cursor.getString(8)
                 );
                 l.id = cursor.getLong(0);
-                list.add(l);
-            } while (cursor.moveToNext());
+                return l;
+            }
         }
-        cursor.close();
-        return list;
-    }
-
-    public LearningCurriculumEngine.Lesson getNextReadyLesson() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT id, subject, module_name, title, order_index, duration, status, notes_content, quiz_json FROM " + TABLE_LESSONS +
-                " WHERE status = 'READY' ORDER BY id ASC LIMIT 1", null);
-        if (cursor.moveToFirst()) {
-            LearningCurriculumEngine.Lesson l = new LearningCurriculumEngine.Lesson(
-                    cursor.getString(1),
-                    cursor.getString(2),
-                    cursor.getString(3),
-                    cursor.getInt(4),
-                    cursor.getInt(5),
-                    cursor.getString(6),
-                    cursor.getString(7),
-                    cursor.getString(8)
-            );
-            l.id = cursor.getLong(0);
-            cursor.close();
-            return l;
-        }
-        cursor.close();
         return null;
     }
 
-    public void markLessonCompleted(long lessonId) {
+    public synchronized void markLessonCompleted(long lessonId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_LESSON_STATUS, "COMPLETED");
@@ -227,7 +228,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // ----------------- MEMORY OPERATIONS -----------------
 
-    public void addMemory(String key, String value) {
+    public synchronized void addMemory(String key, String value) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_MEMORY_KEY, key);
@@ -235,27 +236,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insert(TABLE_MEMORY, null, cv);
     }
 
-    public List<String> getAllMemories() {
+    public synchronized List<String> getAllMemories() {
         List<String> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + COLUMN_MEMORY_KEY + ", " + COLUMN_MEMORY_VALUE + " FROM " + TABLE_MEMORY, null);
-        if (cursor.moveToFirst()) {
-            do {
-                list.add("• " + cursor.getString(0) + ": " + cursor.getString(1));
-            } while (cursor.moveToNext());
+        try (Cursor cursor = db.rawQuery("SELECT " + COLUMN_MEMORY_KEY + ", " + COLUMN_MEMORY_VALUE + " FROM " + TABLE_MEMORY, null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    list.add("• " + cursor.getString(0) + ": " + cursor.getString(1));
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
         return list;
     }
 
-    public void clearAllMemories() {
+    public synchronized void clearAllMemories() {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_MEMORY, null, null);
     }
 
     // ----------------- TASKS & ROUTINES -----------------
 
-    public void addTask(String title, String category) {
+    public synchronized void addTask(String title, String category) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_TASK_TITLE, title);
@@ -264,25 +265,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insert(TABLE_TASKS, null, cv);
     }
 
-    public List<String> getAllTasks() {
+    public synchronized List<String> getAllTasks() {
         List<String> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + COLUMN_TASK_TITLE + ", " + COLUMN_TASK_CATEGORY + ", " + COLUMN_TASK_COMPLETED + " FROM " + TABLE_TASKS, null);
-        if (cursor.moveToFirst()) {
-            do {
-                String title = cursor.getString(0);
-                String cat = cursor.getString(1);
-                int comp = cursor.getInt(2);
-                list.add((comp == 1 ? "✓ " : "○ ") + "[" + cat + "] " + title);
-            } while (cursor.moveToNext());
+        try (Cursor cursor = db.rawQuery("SELECT " + COLUMN_TASK_TITLE + ", " + COLUMN_TASK_CATEGORY + ", " + COLUMN_TASK_COMPLETED + " FROM " + TABLE_TASKS, null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    String title = cursor.getString(0);
+                    String cat = cursor.getString(1);
+                    int comp = cursor.getInt(2);
+                    list.add((comp == 1 ? "✓ " : "○ ") + "[" + cat + "] " + title);
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
         return list;
     }
 
     // ----------------- HABITS & STREAKS -----------------
 
-    public void addHabit(String name) {
+    public synchronized void addHabit(String name) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_HABIT_NAME, name);
@@ -291,43 +292,43 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insert(TABLE_HABITS, null, cv);
     }
 
-    public List<String> getAllHabits() {
+    public synchronized List<String> getAllHabits() {
         List<String> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + COLUMN_HABIT_NAME + ", " + COLUMN_HABIT_STREAK + ", " + COLUMN_HABIT_DONE_TODAY + " FROM " + TABLE_HABITS, null);
-        if (cursor.moveToFirst()) {
-            do {
-                String name = cursor.getString(0);
-                int streak = cursor.getInt(1);
-                int done = cursor.getInt(2);
-                list.add((done == 1 ? "🔥 " : "⏳ ") + name + " (" + streak + " day streak)");
-            } while (cursor.moveToNext());
+        try (Cursor cursor = db.rawQuery("SELECT " + COLUMN_HABIT_NAME + ", " + COLUMN_HABIT_STREAK + ", " + COLUMN_HABIT_DONE_TODAY + " FROM " + TABLE_HABITS, null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    String name = cursor.getString(0);
+                    int streak = cursor.getInt(1);
+                    int done = cursor.getInt(2);
+                    list.add((done == 1 ? "🔥 " : "⏳ ") + name + " (" + streak + " day streak)");
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
         return list;
     }
 
-    public void checkInHabit(String name) {
+    public synchronized void checkInHabit(String name) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL("UPDATE " + TABLE_HABITS + " SET " + COLUMN_HABIT_STREAK + " = " + COLUMN_HABIT_STREAK + " + 1, " + COLUMN_HABIT_DONE_TODAY + " = 1 WHERE " + COLUMN_HABIT_NAME + " LIKE ?", new String[]{"%" + name + "%"});
     }
 
     // ----------------- FINANCE -----------------
 
-    public String getFinanceSummary() {
+    public synchronized String getFinanceSummary() {
         SQLiteDatabase db = this.getReadableDatabase();
         double savings = 0;
         double expenses = 0;
-        Cursor cursor = db.rawQuery("SELECT " + COLUMN_FINANCE_AMOUNT + ", " + COLUMN_FINANCE_TYPE + " FROM " + TABLE_FINANCE, null);
-        if (cursor.moveToFirst()) {
-            do {
-                double amt = cursor.getDouble(0);
-                String type = cursor.getString(1);
-                if ("Income".equalsIgnoreCase(type)) savings += amt;
-                else expenses += amt;
-            } while (cursor.moveToNext());
+        try (Cursor cursor = db.rawQuery("SELECT " + COLUMN_FINANCE_AMOUNT + ", " + COLUMN_FINANCE_TYPE + " FROM " + TABLE_FINANCE, null)) {
+            if (cursor.moveToFirst()) {
+                do {
+                    double amt = cursor.getDouble(0);
+                    String type = cursor.getString(1);
+                    if ("Income".equalsIgnoreCase(type)) savings += amt;
+                    else expenses += amt;
+                } while (cursor.moveToNext());
+            }
         }
-        cursor.close();
         return "💰 Total Tracked: ₹" + (int) savings + " | Spend: ₹" + (int) expenses;
     }
 }

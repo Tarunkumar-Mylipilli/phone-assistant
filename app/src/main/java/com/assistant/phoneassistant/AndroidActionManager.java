@@ -1,5 +1,6 @@
 package com.assistant.phoneassistant;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,8 +14,8 @@ import java.util.Calendar;
 
 /**
  * AndroidActionManager: Centralized Native Android System Controller.
- * Executes native clock alarms, timers, notes, calendar events, app launches, and navigation.
- * Never reports fake success; accurately reports capability and state.
+ * Safely executes native clock alarms, timers, notes, calendar events, app launches, and navigation.
+ * All launches are wrapped in try-catch to prevent ActivityNotFoundException crashes.
  */
 public class AndroidActionManager {
 
@@ -36,12 +37,10 @@ public class AndroidActionManager {
             intent.putExtra(AlarmClock.EXTRA_SKIP_UI, skipUi);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
-                return "Successfully scheduled native Clock Alarm for " + String.format("%02d:%02d", hour, minutes) + " (" + message + ").";
-            } else {
-                return "No system Clock application found capable of receiving AlarmClock.ACTION_SET_ALARM.";
-            }
+            context.startActivity(intent);
+            return "Successfully scheduled native Clock Alarm for " + String.format("%02d:%02d", hour, minutes) + " (" + message + ").";
+        } catch (ActivityNotFoundException e) {
+            return "No Clock application found to handle the alarm request.";
         } catch (Exception e) {
             return "Failed to schedule alarm: " + e.getMessage();
         }
@@ -58,20 +57,18 @@ public class AndroidActionManager {
             intent.putExtra(AlarmClock.EXTRA_SKIP_UI, skipUi);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
-                int mins = seconds / 60;
-                return "Successfully scheduled native Clock Timer for " + mins + " minute(s).";
-            } else {
-                return "No system Timer/Clock application found capable of receiving AlarmClock.ACTION_SET_TIMER.";
-            }
+            context.startActivity(intent);
+            int mins = seconds / 60;
+            return "Successfully scheduled native Clock Timer for " + mins + " minute(s).";
+        } catch (ActivityNotFoundException e) {
+            return "No Clock/Timer application found to handle countdown timer.";
         } catch (Exception e) {
             return "Failed to schedule timer: " + e.getMessage();
         }
     }
 
     /**
-     * Launch any installed Android application by name (YouTube, WhatsApp, Maps, Chrome, Camera, Settings).
+     * Launch any installed Android application by name with Android 11+ package visibility support.
      */
     public String launchAppByName(String appName) {
         try {
@@ -84,12 +81,23 @@ public class AndroidActionManager {
             else if (query.contains("maps") || query.contains("navigation")) targetPkg = "com.google.android.apps.maps";
             else if (query.contains("chrome") || query.contains("browser")) targetPkg = "com.android.chrome";
             else if (query.contains("spotify")) targetPkg = "com.spotify.music";
-            else if (query.contains("camera")) {
+            else if (query.contains("clock") || query.contains("alarm")) {
+                Intent clockIntent = new Intent(AlarmClock.ACTION_SHOW_ALARMS);
+                clockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    context.startActivity(clockIntent);
+                    return "Opened Clock.";
+                } catch (Exception ignored) {
+                    targetPkg = "com.google.android.deskclock";
+                }
+            } else if (query.contains("camera")) {
                 Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 camIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                if (camIntent.resolveActivity(pm) != null) {
+                try {
                     context.startActivity(camIntent);
                     return "Opened Camera.";
+                } catch (ActivityNotFoundException e) {
+                    return "Camera application not available.";
                 }
             } else if (query.contains("settings")) {
                 Intent sIntent = new Intent(Settings.ACTION_SETTINGS);
@@ -107,7 +115,24 @@ public class AndroidActionManager {
                 }
             }
 
-            return "App '" + appName + "' not directly installed on this device.";
+            // Fallback: search for intent by name substring across installed launchable apps
+            Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+            mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(mainIntent, 0)) {
+                String label = ri.loadLabel(pm).toString().toLowerCase();
+                if (label.contains(query) || ri.activityInfo.packageName.toLowerCase().contains(query)) {
+                    Intent appIntent = pm.getLaunchIntentForPackage(ri.activityInfo.packageName);
+                    if (appIntent != null) {
+                        appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(appIntent);
+                        return "Launched " + ri.loadLabel(pm) + " successfully.";
+                    }
+                }
+            }
+
+            return "App '" + appName + "' not directly found on this device.";
+        } catch (ActivityNotFoundException e) {
+            return "Application not installed or activity not found.";
         } catch (Exception e) {
             return "Failed to open app: " + e.getMessage();
         }
@@ -133,12 +158,10 @@ public class AndroidActionManager {
                     .putExtra(CalendarContract.Events.DESCRIPTION, description)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(intent);
-                return "Created native Calendar Event: '" + title + "' at " + String.format("%02d:%02d", startHour, startMinute) + ".";
-            } else {
-                return "No Calendar application available to handle event insertion.";
-            }
+            context.startActivity(intent);
+            return "Created native Calendar Event: '" + title + "' at " + String.format("%02d:%02d", startHour, startMinute) + ".";
+        } catch (ActivityNotFoundException e) {
+            return "No Calendar application installed to handle event creation.";
         } catch (Exception e) {
             return "Calendar error: " + e.getMessage();
         }
@@ -154,36 +177,19 @@ public class AndroidActionManager {
             mapIntent.setPackage("com.google.android.apps.maps");
             mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            if (mapIntent.resolveActivity(context.getPackageManager()) != null) {
-                context.startActivity(mapIntent);
-                return "Starting navigation to " + destination + " on Google Maps.";
-            } else {
+            context.startActivity(mapIntent);
+            return "Starting navigation to " + destination + " on Google Maps.";
+        } catch (ActivityNotFoundException e) {
+            try {
                 Intent webMap = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=" + Uri.encode(destination)));
                 webMap.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(webMap);
                 return "Opening maps navigation for " + destination + ".";
+            } catch (Exception ex) {
+                return "Navigation error: Unable to open maps browser fallback.";
             }
         } catch (Exception e) {
             return "Navigation error: " + e.getMessage();
-        }
-    }
-
-    /**
-     * Create a native note via Intent.ACTION_SEND.
-     */
-    public String createNote(String noteText) {
-        try {
-            Intent noteIntent = new Intent(Intent.ACTION_SEND);
-            noteIntent.setType("text/plain");
-            noteIntent.putExtra(Intent.EXTRA_TEXT, noteText);
-            noteIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            Intent chooser = Intent.createChooser(noteIntent, "Save Note to...");
-            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(chooser);
-            return "Note opened in system note-taking provider.";
-        } catch (Exception e) {
-            return "Note creation error: " + e.getMessage();
         }
     }
 }
