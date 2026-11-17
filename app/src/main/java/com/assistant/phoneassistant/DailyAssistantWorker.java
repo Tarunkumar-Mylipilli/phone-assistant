@@ -11,6 +11,8 @@ import androidx.core.app.NotificationCompat;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import java.util.Calendar;
+
 public class DailyAssistantWorker extends Worker {
 
     public static final String CHANNEL_ID = "phone_assistant_channel";
@@ -23,8 +25,9 @@ public class DailyAssistantWorker extends Worker {
     @Override
     public Result doWork() {
         Context context = getApplicationContext();
+        DatabaseHelper db = new DatabaseHelper(context);
 
-        // 1. Clear background processes automatically
+        // 1. Clear background cache processes safely
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (am != null) {
             for (ActivityManager.RunningAppProcessInfo proc : am.getRunningAppProcesses()) {
@@ -34,8 +37,18 @@ public class DailyAssistantWorker extends Worker {
             }
         }
 
-        // 2. Post Assistant daily summary notification
-        showNotification(context, "Phone Assistant Routine", "Daily background maintenance complete: RAM optimized.");
+        // 2. Check scheduled learning sessions and pre-session preparation
+        Calendar now = Calendar.getInstance();
+        int currentHour = now.get(Calendar.HOUR_OF_DAY);
+
+        LearningCurriculumEngine.Lesson nextLesson = db.getNextReadyLesson();
+        if (nextLesson != null && (currentHour >= 19 && currentHour <= 21)) {
+            // Targeted evening learning session notification (8 PM window)
+            showNotification(context, "Evolve AI • Learning Session Ready",
+                    "Your " + nextLesson.subject + " lesson is ready: \"" + nextLesson.title + "\". Tap to begin.");
+        } else {
+            showNotification(context, "Evolve AI Routine", "Background system maintenance complete: Memory and routines aligned.");
+        }
 
         return Result.success();
     }
