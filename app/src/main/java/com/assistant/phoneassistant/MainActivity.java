@@ -2,15 +2,18 @@ package com.assistant.phoneassistant;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.speech.RecognizerIntent;
 import android.provider.Settings;
+import android.speech.RecognizerIntent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -23,8 +26,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
@@ -49,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_SPEECH_RECOGNITION = 201;
     private static final int REQUEST_CAMERA_PERMISSION = 202;
+    private static final int REQUEST_OVERLAY_PERMISSION = 203;
+    private static final int REQUEST_ROLE_ASSISTANT = 204;
 
     private DatabaseHelper dbHelper;
     private LocalModelManager modelManager;
@@ -70,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
     private Button btnCleanRam;
     private Button btnScreenTimeSettings;
     private Button btnVoiceSpeak;
+    private Button btnToggleBubble;
+    private Button btnSetDefaultAssistant;
 
     // AI Assistant views
     private TextView tvAiResponse;
@@ -110,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Use thread-safe singleton DatabaseHelper to eliminate lock crashes
+        // Thread-safe singleton DatabaseHelper to eliminate lock crashes
         dbHelper = DatabaseHelper.getInstance(this);
         modelManager = new LocalModelManager(this);
         voiceManager = new VoiceManager(this);
@@ -123,6 +128,22 @@ public class MainActivity extends AppCompatActivity {
         updateDeviceInfo();
         refreshAllData();
         scheduleBackgroundRoutine();
+
+        // Check if launched via system assist intent or floating bubble
+        handleIncomingIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingIntent(intent);
+    }
+
+    private void handleIncomingIntent(Intent intent) {
+        if (intent != null && intent.getBooleanExtra("ACTION_VOICE_ASSIST", false)) {
+            startVoiceRecognition();
+        }
     }
 
     private void initViews() {
@@ -140,12 +161,20 @@ public class MainActivity extends AppCompatActivity {
         btnCleanRam = findViewById(R.id.btnCleanRam);
         btnScreenTimeSettings = findViewById(R.id.btnScreenTimeSettings);
         btnVoiceSpeak = findViewById(R.id.btnVoiceSpeak);
+        btnToggleBubble = findViewById(R.id.btnToggleBubble);
+        btnSetDefaultAssistant = findViewById(R.id.btnSetDefaultAssistant);
 
         btnCleanRam.setOnClickListener(v -> cleanBackgroundApps());
         btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
 
-        // 1. FIXED SPEAK BUTTON: Launches Speech-To-Text intent to listen to user
+        // 1. Voice Recognition Button
         btnVoiceSpeak.setOnClickListener(v -> startVoiceRecognition());
+
+        // 2. Floating Overlay Bubble Toggle
+        btnToggleBubble.setOnClickListener(v -> toggleFloatingBubble());
+
+        // 3. Set Default Assistant via RoleManager
+        btnSetDefaultAssistant.setOnClickListener(v -> requestAssistantRole());
 
         // Assistant
         tvAiResponse = findViewById(R.id.tvAiResponse);
@@ -259,13 +288,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Start on-device Speech-To-Text voice recognition.
+     * Request RoleManager to set Evolve AI as Default Assistant app.
+     */
+    private void requestAssistantRole() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            RoleManager roleManager = getSystemService(RoleManager.class);
+            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+                if (!roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+                    Intent intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT);
+                    startActivityForResult(intent, REQUEST_ROLE_ASSISTANT);
+                    return;
+                } else {
+                    Toast.makeText(this, "Evolve AI is already your Default Assistant!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+        }
+        // Fallback for earlier versions
+        try {
+            Intent intent = new Intent(Settings.ACTION_VOICE_INPUT_SETTINGS);
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Open Device Settings -> Default Apps -> Assist app to select Evolve AI.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Start/Stop Floating Draggable Microphone Bubble.
+     */
+    private void toggleFloatingBubble() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION);
+        } else {
+            Intent serviceIntent = new Intent(this, FloatingBubbleService.class);
+            startService(serviceIntent);
+            Toast.makeText(this, "Floating Bubble activated over other apps!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Launch Speech-To-Text voice recognition.
      */
     private void startVoiceRecognition() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Listening for Evolve AI command...");
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "How can I help?");
         try {
             startActivityForResult(intent, REQUEST_SPEECH_RECOGNITION);
         } catch (Exception e) {
@@ -273,9 +343,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Start CameraX PreviewView stream.
-     */
     private void startCameraX() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
@@ -326,6 +393,16 @@ public class MainActivity extends AppCompatActivity {
                 tvAiResponse.setText(reply);
                 refreshAllData();
                 voiceManager.speak(reply);
+            }
+        } else if (requestCode == REQUEST_OVERLAY_PERMISSION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+                Intent serviceIntent = new Intent(this, FloatingBubbleService.class);
+                startService(serviceIntent);
+                Toast.makeText(this, "Floating Bubble enabled!", Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == REQUEST_ROLE_ASSISTANT) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(this, "Evolve AI granted Default Assistant Role!", Toast.LENGTH_SHORT).show();
             }
         }
     }

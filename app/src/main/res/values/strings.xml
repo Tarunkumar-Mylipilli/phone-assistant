@@ -4,4 +4,5 @@
     <string name="title_diagnostics">Device Health &amp; Memory</string>
     <string name="clean_ram">Auto-Clean Background RAM</string>
     <string name="manage_screen_time">Manage Screen Time &amp; Wellbeing</string>
+    <string name="accessibility_service_desc">Evolve AI System Assistant Accessibility Service for UI automation and screen interaction.</string>
 </resources>
