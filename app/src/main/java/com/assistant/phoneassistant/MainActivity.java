@@ -40,16 +40,15 @@ public class MainActivity extends AppCompatActivity {
     // Navigation sections
     private LinearLayout sectionHome;
     private LinearLayout sectionAssistant;
+    private LinearLayout sectionLearning;
     private LinearLayout sectionVision;
     private LinearLayout sectionActions;
-    private LinearLayout sectionCareer;
     private BottomNavigationView bottomNavigationView;
 
     // Home views
     private TextView tvMemoryInfo;
     private TextView tvBatteryInfo;
     private TextView tvDailyBrief;
-    private TextView tvFinanceOverview;
     private Button btnCleanRam;
     private Button btnScreenTimeSettings;
     private Button btnVoiceSpeak;
@@ -60,6 +59,14 @@ public class MainActivity extends AppCompatActivity {
     private Button btnSendQuery;
     private Button chipAlarm;
     private Button chipTimer;
+    private Button chipSqlLearn;
+
+    // Learning views
+    private TextView tvLearningHeader;
+    private TextView tvLessonStatus;
+    private TextView tvLessonContent;
+    private Button btnCompleteLesson;
+    private LearningCurriculumEngine.Lesson currentActiveLesson;
 
     // Vision Coach views
     private ImageView ivCameraFrame;
@@ -77,10 +84,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btnTriggerTimer;
     private Button btnLaunchYouTube;
     private Button btnLaunchMaps;
-
-    // Career views
-    private TextView tvSkillsList;
-    private Button btnMockInterview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,16 +105,15 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         sectionHome = findViewById(R.id.sectionHome);
         sectionAssistant = findViewById(R.id.sectionAssistant);
+        sectionLearning = findViewById(R.id.sectionLearning);
         sectionVision = findViewById(R.id.sectionVision);
         sectionActions = findViewById(R.id.sectionActions);
-        sectionCareer = findViewById(R.id.sectionCareer);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Home
         tvMemoryInfo = findViewById(R.id.tvMemoryInfo);
         tvBatteryInfo = findViewById(R.id.tvBatteryInfo);
         tvDailyBrief = findViewById(R.id.tvDailyBrief);
-        tvFinanceOverview = findViewById(R.id.tvFinanceOverview);
         btnCleanRam = findViewById(R.id.btnCleanRam);
         btnScreenTimeSettings = findViewById(R.id.btnScreenTimeSettings);
         btnVoiceSpeak = findViewById(R.id.btnVoiceSpeak);
@@ -120,8 +122,8 @@ public class MainActivity extends AppCompatActivity {
         btnScreenTimeSettings.setOnClickListener(v -> openScreenTimeSettings());
         btnVoiceSpeak.setOnClickListener(v -> {
             String briefText = tvDailyBrief.getText().toString();
-            voiceManager.speak("Welcome to Evolve A I. " + briefText);
-            Toast.makeText(this, "Speaking daily briefing...", Toast.LENGTH_SHORT).show();
+            voiceManager.speak("Evolve A I Status. " + briefText);
+            Toast.makeText(this, "Speaking status...", Toast.LENGTH_SHORT).show();
         });
 
         // Assistant
@@ -130,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         btnSendQuery = findViewById(R.id.btnSendQuery);
         chipAlarm = findViewById(R.id.chipAlarm);
         chipTimer = findViewById(R.id.chipTimer);
+        chipSqlLearn = findViewById(R.id.chipSqlLearn);
 
         btnSendQuery.setOnClickListener(v -> {
             String query = etUserQuery.getText().toString().trim();
@@ -154,6 +157,29 @@ public class MainActivity extends AppCompatActivity {
             voiceManager.speak(reply);
         });
 
+        chipSqlLearn.setOnClickListener(v -> {
+            String reply = AIAssistantEngine.processQuery("Schedule SQL learning every day at 8 PM", dbHelper, modelManager, actionManager);
+            tvAiResponse.setText(reply);
+            refreshAllData();
+            voiceManager.speak(reply);
+        });
+
+        // Learning Dashboard
+        tvLearningHeader = findViewById(R.id.tvLearningHeader);
+        tvLessonStatus = findViewById(R.id.tvLessonStatus);
+        tvLessonContent = findViewById(R.id.tvLessonContent);
+        btnCompleteLesson = findViewById(R.id.btnCompleteLesson);
+
+        btnCompleteLesson.setOnClickListener(v -> {
+            if (currentActiveLesson != null) {
+                dbHelper.markLessonCompleted(currentActiveLesson.id);
+                Toast.makeText(this, "Lesson marked COMPLETED! Quiz recorded.", Toast.LENGTH_SHORT).show();
+                refreshLearningView();
+            } else {
+                Toast.makeText(this, "No active lesson loaded.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         // Vision Coach
         ivCameraFrame = findViewById(R.id.ivCameraFrame);
         tvLiveGuidance = findViewById(R.id.tvLiveGuidance);
@@ -165,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
         btnCycleCoachMode.setOnClickListener(v -> {
             coachModeIndex = (coachModeIndex + 1) % coachModes.length;
             btnCycleCoachMode.setText("Mode: " + coachModes[coachModeIndex]);
-            Toast.makeText(this, "Camera Coach Mode: " + coachModes[coachModeIndex], Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Camera Mode: " + coachModes[coachModeIndex], Toast.LENGTH_SHORT).show();
         });
 
         btnCapturePhoto.setOnClickListener(v -> {
@@ -173,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
             if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
             } else {
-                Toast.makeText(this, "Default camera app not accessible.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera hardware not accessible.", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -203,16 +229,6 @@ public class MainActivity extends AppCompatActivity {
         btnLaunchMaps.setOnClickListener(v -> {
             String res = actionManager.startNavigation("Nearby Gym");
             Toast.makeText(this, res, Toast.LENGTH_SHORT).show();
-        });
-
-        // Career
-        tvSkillsList = findViewById(R.id.tvSkillsList);
-        btnMockInterview = findViewById(R.id.btnMockInterview);
-        btnMockInterview.setOnClickListener(v -> {
-            bottomNavigationView.setSelectedItemId(R.id.nav_assistant);
-            String reply = "Evolve Mock Interviewer: Question 1:\n\n'In a distributed system, how would you design an idempotent payment processing API to handle network retries without double-charging the customer?'\n\nType your answer below:";
-            tvAiResponse.setText(reply);
-            voiceManager.speak(reply);
         });
     }
 
@@ -244,9 +260,9 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
             sectionHome.setVisibility(View.GONE);
             sectionAssistant.setVisibility(View.GONE);
+            sectionLearning.setVisibility(View.GONE);
             sectionVision.setVisibility(View.GONE);
             sectionActions.setVisibility(View.GONE);
-            sectionCareer.setVisibility(View.GONE);
 
             if (id == R.id.nav_home) {
                 sectionHome.setVisibility(View.VISIBLE);
@@ -255,32 +271,44 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_assistant) {
                 sectionAssistant.setVisibility(View.VISIBLE);
                 return true;
+            } else if (id == R.id.nav_learning) {
+                sectionLearning.setVisibility(View.VISIBLE);
+                refreshLearningView();
+                return true;
             } else if (id == R.id.nav_vision) {
                 sectionVision.setVisibility(View.VISIBLE);
                 return true;
             } else if (id == R.id.nav_actions) {
                 sectionActions.setVisibility(View.VISIBLE);
                 return true;
-            } else if (id == R.id.nav_career) {
-                sectionCareer.setVisibility(View.VISIBLE);
-                refreshAllData();
-                return true;
             }
             return false;
         });
     }
 
+    private void refreshLearningView() {
+        currentActiveLesson = dbHelper.getNextReadyLesson();
+        if (currentActiveLesson != null) {
+            tvLearningHeader.setText("SUBJECT: " + currentActiveLesson.subject.toUpperCase() + " • " + currentActiveLesson.moduleName);
+            tvLessonStatus.setText("Status: " + currentActiveLesson.status + " (Duration: " + currentActiveLesson.durationMinutes + " mins)");
+            tvLessonContent.setText("### " + currentActiveLesson.title + "\n\n" + currentActiveLesson.notesContent);
+        } else {
+            tvLearningHeader.setText("SMART LEARNING PREPARATION");
+            tvLessonStatus.setText("Status: No active curricula scheduled");
+            tvLessonContent.setText("Schedule any subject from the Jarvis assistant tab (e.g. 'Schedule SQL learning every day at 8 PM').\n\nLessons, theory notes, and quizzes will be generated and cached locally in SQLite for offline access.");
+        }
+    }
+
     private void refreshAllData() {
         List<String> tasks = dbHelper.getAllTasks();
-        List<String> skills = dbHelper.getAllSkills();
-        StringBuilder skillSb = new StringBuilder();
-        for (String s : skills) {
-            skillSb.append(s).append("\n\n");
-        }
-        tvSkillsList.setText(skillSb.length() > 0 ? skillSb.toString() : "No technical roadmaps loaded.");
+        List<String> memories = dbHelper.getAllMemories();
 
-        tvFinanceOverview.setText(dbHelper.getFinanceSummary());
-        tvDailyBrief.setText("Good day. " + tasks.size() + " active milestones scheduled across your career, vision coach, and routines.");
+        StringBuilder sb = new StringBuilder();
+        sb.append("Local Model: ").append(modelManager.getActiveModelId().toUpperCase()).append("\n");
+        sb.append("Tasks: ").append(tasks.size()).append(" scheduled | Memories Stored: ").append(memories.size());
+
+        tvDailyBrief.setText(sb.toString());
+        refreshLearningView();
     }
 
     private void updateDeviceInfo() {

@@ -7,17 +7,17 @@
     <item
         android:id="@+id/nav_assistant"
         android:icon="@android:drawable/ic_menu_send"
-        android:title="AI Jarvis" />
+        android:title="Jarvis" />
+    <item
+        android:id="@+id/nav_learning"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="Learning" />
     <item
         android:id="@+id/nav_vision"
         android:icon="@android:drawable/ic_menu_camera"
-        android:title="Vision Coach" />
+        android:title="Vision" />
     <item
         android:id="@+id/nav_actions"
         android:icon="@android:drawable/ic_lock_idle_alarm"
         android:title="Actions" />
-    <item
-        android:id="@+id/nav_career"
-        android:icon="@android:drawable/ic_menu_compass"
-        android:title="Career" />
 </menu>

@@ -8,20 +8,20 @@ import android.provider.AlarmClock;
 import android.provider.CalendarContract;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.widget.Toast;
 
 import java.util.Calendar;
 
 /**
  * AndroidActionManager: Centralized Native Android System Controller.
- * Handles Alarms, Timers, App Launching, Calendar Events, Notes, and System Settings.
+ * Executes native clock alarms, timers, notes, calendar events, app launches, and navigation.
+ * Never reports fake success; accurately reports capability and state.
  */
 public class AndroidActionManager {
 
     private Context context;
 
     public AndroidActionManager(Context context) {
-        this.context = context;
+        this.context = context.getApplicationContext();
     }
 
     /**
@@ -40,10 +40,10 @@ public class AndroidActionManager {
                 context.startActivity(intent);
                 return "Successfully scheduled native Clock Alarm for " + String.format("%02d:%02d", hour, minutes) + " (" + message + ").";
             } else {
-                return "Unable to schedule alarm: No default Clock application found on device.";
+                return "No system Clock application found capable of receiving AlarmClock.ACTION_SET_ALARM.";
             }
         } catch (Exception e) {
-            return "Alarm error: " + e.getMessage();
+            return "Failed to schedule alarm: " + e.getMessage();
         }
     }
 
@@ -63,15 +63,15 @@ public class AndroidActionManager {
                 int mins = seconds / 60;
                 return "Successfully scheduled native Clock Timer for " + mins + " minute(s).";
             } else {
-                return "Unable to schedule timer: No default Timer/Clock app detected.";
+                return "No system Timer/Clock application found capable of receiving AlarmClock.ACTION_SET_TIMER.";
             }
         } catch (Exception e) {
-            return "Timer error: " + e.getMessage();
+            return "Failed to schedule timer: " + e.getMessage();
         }
     }
 
     /**
-     * Launch any installed Android application by name (e.g., YouTube, WhatsApp, Maps, Chrome, Camera).
+     * Launch any installed Android application by name (YouTube, WhatsApp, Maps, Chrome, Camera, Settings).
      */
     public String launchAppByName(String appName) {
         try {
@@ -83,6 +83,7 @@ public class AndroidActionManager {
             else if (query.contains("whatsapp")) targetPkg = "com.whatsapp";
             else if (query.contains("maps") || query.contains("navigation")) targetPkg = "com.google.android.apps.maps";
             else if (query.contains("chrome") || query.contains("browser")) targetPkg = "com.android.chrome";
+            else if (query.contains("spotify")) targetPkg = "com.spotify.music";
             else if (query.contains("camera")) {
                 Intent camIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 camIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -90,8 +91,7 @@ public class AndroidActionManager {
                     context.startActivity(camIntent);
                     return "Opened Camera.";
                 }
-            } else if (query.contains("spotify")) targetPkg = "com.spotify.music";
-            else if (query.contains("settings")) {
+            } else if (query.contains("settings")) {
                 Intent sIntent = new Intent(Settings.ACTION_SETTINGS);
                 sIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(sIntent);
@@ -107,7 +107,7 @@ public class AndroidActionManager {
                 }
             }
 
-            return "App '" + appName + "' not found directly. Please ensure it is installed on your Realme GT 2.";
+            return "App '" + appName + "' not directly installed on this device.";
         } catch (Exception e) {
             return "Failed to open app: " + e.getMessage();
         }
@@ -137,7 +137,7 @@ public class AndroidActionManager {
                 context.startActivity(intent);
                 return "Created native Calendar Event: '" + title + "' at " + String.format("%02d:%02d", startHour, startMinute) + ".";
             } else {
-                return "No Calendar application found to record the event.";
+                return "No Calendar application available to handle event insertion.";
             }
         } catch (Exception e) {
             return "Calendar error: " + e.getMessage();
@@ -145,7 +145,7 @@ public class AndroidActionManager {
     }
 
     /**
-     * Start navigation via Google Maps intent.
+     * Start navigation via Google Maps.
      */
     public String startNavigation(String destination) {
         try {
@@ -165,6 +165,25 @@ public class AndroidActionManager {
             }
         } catch (Exception e) {
             return "Navigation error: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Create a native note via Intent.ACTION_SEND.
+     */
+    public String createNote(String noteText) {
+        try {
+            Intent noteIntent = new Intent(Intent.ACTION_SEND);
+            noteIntent.setType("text/plain");
+            noteIntent.putExtra(Intent.EXTRA_TEXT, noteText);
+            noteIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            Intent chooser = Intent.createChooser(noteIntent, "Save Note to...");
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(chooser);
+            return "Note opened in system note-taking provider.";
+        } catch (Exception e) {
+            return "Note creation error: " + e.getMessage();
         }
     }
 }
