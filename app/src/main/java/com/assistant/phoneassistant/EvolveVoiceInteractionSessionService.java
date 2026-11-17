@@ -1,7 +1,5 @@
 package com.assistant.phoneassistant;
 
-import android.app.assist.AssistContent;
-import android.app.assist.AssistStructure;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,7 +19,7 @@ public class EvolveVoiceInteractionSessionService extends VoiceInteractionSessio
         }
 
         @Override
-        public void onHandleAssist(Bundle data, AssistStructure structure, AssistContent content) {
+        public void onHandleAssist(Bundle data, android.app.assist.AssistStructure structure, android.app.assist.AssistContent content) {
             super.onHandleAssist(data, structure, content);
             Intent intent = new Intent(getContext(), MainActivity.class);
             intent.putExtra("ACTION_VOICE_ASSIST", true);
